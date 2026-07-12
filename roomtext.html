@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>RoomText</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #f5f1e8;
+            --panel: #fffdf8;
+            --ink: #202124;
+            --muted: #687076;
+            --line: #d9d0c1;
+            --green: #2f8f63;
+            --blue: #2563eb;
+            --coral: #e85d4f;
+            --yellow: #f5c542;
+            --shadow: rgba(32, 33, 36, 0.16);
+        }
+
+        @keyframes popIn {
+            0% { transform: translateY(10px) scale(0.98); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        @keyframes alertIn { from { transform: translate(-50%, -140%); } to { transform: translate(-50%, 0); } }
+        @keyframes alertOut { from { transform: translate(-50%, 0); } to { transform: translate(-50%, -140%); } }
+
+        body {
+            min-height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background:
+                linear-gradient(135deg, rgba(245, 197, 66, 0.24), transparent 32%),
+                linear-gradient(315deg, rgba(37, 99, 235, 0.16), transparent 34%),
+                var(--bg);
+            color: var(--ink);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(32, 33, 36, 0.045) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(32, 33, 36, 0.045) 1px, transparent 1px);
+            background-size: 34px 34px;
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent 78%);
+        }
+
+        .container {
+            width: min(100%, 880px);
+            height: min(92vh, 680px);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hidden { display: none !important; }
+
+        .screen {
+            width: 100%;
+            animation: popIn 0.26s ease-out;
+        }
+
+        .panel {
+            width: min(100%, 520px);
+            margin: 0 auto;
+            padding: 28px;
+            border: 2px solid var(--ink);
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: 10px 10px 0 var(--shadow);
+        }
+
+        .app-mark {
+            width: 74px;
+            height: 74px;
+            display: grid;
+            place-items: center;
+            margin: 0 auto 18px;
+            border: 2px solid var(--ink);
+            border-radius: 8px;
+            background: var(--yellow);
+            box-shadow: 5px 5px 0 rgba(32, 33, 36, 0.18);
+            font-size: 2.4rem;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        h1, h2 {
+            text-align: center;
+            line-height: 1;
+            letter-spacing: 0;
+        }
+
+        h1 {
+            font-size: clamp(2.6rem, 10vw, 5rem);
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            font-size: clamp(2rem, 7vw, 3.8rem);
+            margin-bottom: 18px;
+        }
+
+        .subtle {
+            color: var(--muted);
+            text-align: center;
+            font-size: 1rem;
+            line-height: 1.45;
+            margin-bottom: 22px;
+        }
+
+        .name-input-container { margin: 18px 0; }
+
+        input, textarea, button {
+            font: inherit;
+        }
+
+        .name-input-container input,
+        #connection-setup input[type="text"] {
+            width: 100%;
+            min-height: 50px;
+            border: 2px solid var(--ink);
+            border-radius: 8px;
+            background: #ffffff;
+            color: var(--ink);
+            outline: none;
+            box-shadow: inset 0 -3px 0 rgba(32, 33, 36, 0.06);
+        }
+
+        .name-input-container input {
+            padding: 10px 14px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .btn {
+            min-height: 46px;
+            padding: 9px 18px;
+            border: 2px solid var(--ink);
+            border-radius: 8px;
+            background: #ffffff;
+            color: var(--ink);
+            cursor: pointer;
+            font-weight: 800;
+            box-shadow: 5px 5px 0 var(--shadow);
+            transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+            white-space: nowrap;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translate(-2px, -2px);
+            box-shadow: 7px 7px 0 var(--shadow);
+        }
+
+        .btn:active:not(:disabled) {
+            transform: translate(3px, 3px);
+            box-shadow: 2px 2px 0 var(--shadow);
+        }
+
+        .btn:disabled {
+            color: #8b9297;
+            background: #e8e8e8;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .btn.primary { background: var(--green); color: #ffffff; }
+        .btn.secondary { background: var(--blue); color: #ffffff; }
+        .btn.copied { background: #9be3b5; color: var(--ink); box-shadow: none; transform: none; }
+
+        .btn.back-btn {
+            position: absolute;
+            top: 18px;
+            left: 18px;
+            min-height: 38px;
+            padding: 6px 14px;
+            font-size: 0.9rem;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        #connection-setup {
+            position: relative;
+        }
+
+        #connection-setup .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        #connection-setup input[type="text"] {
+            max-width: 260px;
+            padding: 10px 6px 10px 20px;
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 900;
+            letter-spacing: 0.38em;
+        }
+
+        #connection-status {
+            min-height: 28px;
+            margin-top: 18px;
+            color: var(--muted);
+            text-align: center;
+            font-weight: 700;
+        }
+
+        #chat-container {
+            height: 100%;
+            border: 2px solid var(--ink);
+            border-radius: 8px;
+            background: var(--panel);
+            box-shadow: 10px 10px 0 var(--shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 14px 16px;
+            border-bottom: 2px solid var(--ink);
+            background: #fbdf5a;
+        }
+
+        .chat-title {
+            min-width: 0;
+        }
+
+        .chat-title h2 {
+            margin: 0 0 4px;
+            text-align: left;
+            font-size: clamp(1.3rem, 5vw, 2rem);
+            line-height: 1.05;
+        }
+
+        .chat-title p {
+            color: #3d3d3d;
+            font-size: 0.92rem;
+            font-weight: 700;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            flex: 0 0 auto;
+            border: 2px solid var(--ink);
+            border-radius: 999px;
+            background: #39c16c;
+            vertical-align: -1px;
+        }
+
+        .room-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 0 0 auto;
+            border: 2px solid var(--ink);
+            border-radius: 8px;
+            padding: 8px 10px;
+            background: #ffffff;
+            font-weight: 900;
+            box-shadow: 3px 3px 0 rgba(32, 33, 36, 0.12);
+        }
+
+        .messages {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background:
+                linear-gradient(rgba(255,255,255,0.68), rgba(255,255,255,0.68)),
+                repeating-linear-gradient(0deg, transparent, transparent 32px, rgba(32, 33, 36, 0.07) 33px);
+        }
+
+        .message {
+            max-width: min(76%, 540px);
+            padding: 10px 12px 8px;
+            border: 2px solid var(--ink);
+            border-radius: 8px;
+            background: #ffffff;
+            box-shadow: 4px 4px 0 rgba(32, 33, 36, 0.12);
+            overflow-wrap: anywhere;
+        }
+
+        .message.mine {
+            align-self: flex-end;
+            background: #d9f8e6;
+        }
+
+        .message.theirs {
+            align-self: flex-start;
+            background: #e6efff;
+        }
+
+        .message.system {
+            align-self: center;
+            max-width: 92%;
+            border-color: var(--line);
+            background: #fff7d7;
+            box-shadow: none;
+            color: #5b4a16;
+            font-weight: 800;
+            text-align: center;
+        }
+
+        .message-meta {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 4px;
+            color: var(--muted);
+            font-size: 0.78rem;
+            font-weight: 900;
+        }
+
+        .message-text {
+            white-space: pre-wrap;
+            line-height: 1.35;
+            font-size: 1rem;
+        }
+
+        #typing-indicator {
+            min-height: 24px;
+            padding: 0 18px 8px;
+            color: var(--muted);
+            font-size: 0.9rem;
+            font-weight: 800;
+        }
+
+        .composer {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            padding: 12px;
+            border-top: 2px solid var(--ink);
+            background: #ffffff;
+        }
+
+        #message-input {
+            width: 100%;
+            min-height: 48px;
+            max-height: 128px;
+            resize: none;
+            padding: 12px;
+            border: 2px solid var(--ink);
+            border-radius: 8px;
+            outline: none;
+            line-height: 1.3;
+        }
+
+        #send-message-btn {
+            min-width: 96px;
+            background: var(--coral);
+            color: #ffffff;
+        }
+
+        #alert-screen {
+            position: fixed;
+            top: 12px;
+            left: 50%;
+            z-index: 999;
+            width: min(calc(100% - 24px), 520px);
+            padding: 12px 16px;
+            border: 2px solid var(--ink);
+            border-radius: 8px;
+            background: var(--ink);
+            color: #ffffff;
+            text-align: center;
+            font-weight: 900;
+            transform: translate(-50%, -140%);
+        }
+
+        #alert-screen.show { animation: alertIn 0.24s forwards; }
+        #alert-screen.hide { animation: alertOut 0.24s forwards; }
+
+        body.is-mobile {
+            padding: 10px;
+        }
+
+        body.is-mobile .container {
+            height: calc(100vh - 20px);
+        }
+
+        body.is-mobile .panel {
+            padding: 22px 16px;
+            box-shadow: 6px 6px 0 var(--shadow);
+        }
+
+        body.is-mobile .btn.back-btn {
+            position: static;
+            margin-bottom: 14px;
+        }
+
+        body.is-mobile #connection-setup .input-group {
+            flex-direction: column;
+        }
+
+        body.is-mobile #connection-setup input[type="text"] {
+            max-width: none;
+            font-size: 1.7rem;
+        }
+
+        body.is-mobile .chat-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        body.is-mobile .room-pill {
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        body.is-mobile .messages {
+            padding: 12px;
+        }
+
+        body.is-mobile .message {
+            max-width: 88%;
+        }
+
+        body.is-mobile .composer {
+            grid-template-columns: 1fr;
+        }
+
+        body.is-mobile #send-message-btn {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="start-screen" class="screen">
+            <div class="panel">
+                <div class="app-mark">RT</div>
+                <h1>RoomText</h1>
+                <p class="subtle">Private two-person texting with the same simple room-code connection flow.</p>
+                <div class="name-input-container">
+                    <input type="text" id="player-name-input" maxlength="18" autocomplete="name" placeholder="Your name">
+                </div>
+                <div class="button-group">
+                    <button id="start-connect-btn" class="btn primary">Start Texting</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="connection-setup" class="screen hidden">
+            <div class="panel">
+                <button class="btn back-btn" id="back-to-menu-btn">Back</button>
+                <h2>Connect</h2>
+                <p class="subtle">Host a room and share the code, or enter a code to join someone else.</p>
+                <div class="input-group">
+                    <input type="text" id="room-code-input" maxlength="6" inputmode="numeric" autocomplete="off" placeholder="CODE">
+                    <button id="copy-code-btn" class="btn hidden">Copy</button>
+                </div>
+                <div class="button-group">
+                    <button id="host-game-btn" class="btn primary">Host New Room</button>
+                    <button id="join-game-btn" class="btn secondary">Join with Code</button>
+                </div>
+                <p id="connection-status">Ready to connect.</p>
+            </div>
+        </div>
+
+        <div id="chat-container" class="screen hidden">
+            <div class="chat-header">
+                <div class="chat-title">
+                    <h2 id="chat-heading">Texting</h2>
+                    <p><span class="status-dot" aria-hidden="true"></span> <span id="connection-label">Connected</span></p>
+                </div>
+                <div class="room-pill">Room <span id="active-room-code">------</span></div>
+            </div>
+            <div id="messages" class="messages" aria-live="polite"></div>
+            <div id="typing-indicator"></div>
+            <form id="message-form" class="composer">
+                <textarea id="message-input" maxlength="800" rows="1" placeholder="Type a message..." autocomplete="off"></textarea>
+                <button id="send-message-btn" class="btn" type="submit">Send</button>
+            </form>
+        </div>
+
+        <div id="alert-screen"></div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    if (/Mobi|Android/i.test(navigator.userAgent)) {
+        document.body.classList.add('is-mobile');
+    }
+
+    const screens = {
+        start: document.getElementById('start-screen'),
+        connect: document.getElementById('connection-setup'),
+        chat: document.getElementById('chat-container')
+    };
+
+    const playerNameInput = document.getElementById('player-name-input');
+    const startConnectBtn = document.getElementById('start-connect-btn');
+    const roomCodeInput = document.getElementById('room-code-input');
+    const hostGameBtn = document.getElementById('host-game-btn');
+    const joinGameBtn = document.getElementById('join-game-btn');
+    const connectionStatus = document.getElementById('connection-status');
+    const backBtn = document.getElementById('back-to-menu-btn');
+    const copyCodeBtn = document.getElementById('copy-code-btn');
+    const alertScreen = document.getElementById('alert-screen');
+    const messagesEl = document.getElementById('messages');
+    const messageForm = document.getElementById('message-form');
+    const messageInput = document.getElementById('message-input');
+    const sendMessageBtn = document.getElementById('send-message-btn');
+    const chatHeading = document.getElementById('chat-heading');
+    const connectionLabel = document.getElementById('connection-label');
+    const activeRoomCode = document.getElementById('active-room-code');
+    const typingIndicator = document.getElementById('typing-indicator');
+
+    let peer;
+    let conn;
+    let myPlayerName = 'Me';
+    let opponentPlayerName = 'Friend';
+    let currentRoomCode = '';
+    let typingTimer;
+    let alertTimer;
+    let chatReady = false;
+    const peerIdPrefix = 'roomtext-v1-';
+
+    function showAlert(message, duration = 3000) {
+        clearTimeout(alertTimer);
+        alertScreen.textContent = message;
+        alertScreen.classList.add('show');
+        alertScreen.classList.remove('hide');
+        alertTimer = setTimeout(() => {
+            alertScreen.classList.add('hide');
+            alertScreen.classList.remove('show');
+        }, duration);
+    }
+
+    function showScreen(screenName) {
+        Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+        screens[screenName].classList.remove('hidden');
+    }
+
+    function setPlayerName() {
+        myPlayerName = playerNameInput.value.trim() || 'Me';
+    }
+
+    function cleanupPeer() {
+        chatReady = false;
+        if (conn) {
+            conn.close();
+            conn = null;
+        }
+        if (peer) {
+            peer.destroy();
+            peer = null;
+        }
+    }
+
+    function resetConnectionUI() {
+        connectionStatus.textContent = 'Ready to connect.';
+        hostGameBtn.disabled = false;
+        joinGameBtn.disabled = false;
+        copyCodeBtn.classList.add('hidden');
+    }
+
+    function prepareChat() {
+        chatReady = true;
+        showScreen('chat');
+        activeRoomCode.textContent = currentRoomCode || '------';
+        chatHeading.textContent = opponentPlayerName === 'Friend' ? 'Texting' : opponentPlayerName;
+        connectionLabel.textContent = `Connected as ${myPlayerName}`;
+        messageInput.disabled = false;
+        sendMessageBtn.disabled = false;
+        messageInput.focus();
+    }
+
+    function addMessage(kind, text, name = '', time = new Date().toISOString()) {
+        const message = document.createElement('div');
+        message.className = `message ${kind}`;
+
+        if (kind === 'system') {
+            message.textContent = text;
+        } else {
+            const meta = document.createElement('div');
+            meta.className = 'message-meta';
+
+            const author = document.createElement('span');
+            author.textContent = name;
+
+            const stamp = document.createElement('span');
+            stamp.textContent = formatTime(time);
+
+            const body = document.createElement('div');
+            body.className = 'message-text';
+            body.textContent = text;
+
+            meta.append(author, stamp);
+            message.append(meta, body);
+        }
+
+        messagesEl.appendChild(message);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function formatTime(value) {
+        return new Date(value).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    }
+
+    function sendData(data) {
+        if (conn && conn.open) {
+            conn.send(data);
+        }
+    }
+
+    function initializeHost(roomCode) {
+        cleanupPeer();
+        currentRoomCode = roomCode;
+        peer = new Peer(peerIdPrefix + roomCode);
+        connectionStatus.textContent = `Room code is '${roomCode}'. Waiting...`;
+        copyCodeBtn.classList.remove('hidden');
+        hostGameBtn.disabled = true;
+        joinGameBtn.disabled = true;
+
+        peer.on('connection', newConn => {
+            if (conn && conn.open) {
+                newConn.close();
+                return;
+            }
+            conn = newConn;
+            setupConnectionEvents(conn);
+        });
+
+        peer.on('error', err => {
+            showAlert('Error: ' + err.type);
+            if (err.type === 'unavailable-id') {
+                showAlert('Code is in use. Try another.');
+            }
+            resetConnectionUI();
+        });
+    }
+
+    function initializeJoin(roomCode) {
+        cleanupPeer();
+        currentRoomCode = roomCode;
+        peer = new Peer();
+        connectionStatus.textContent = `Joining room '${roomCode}'...`;
+        hostGameBtn.disabled = true;
+        joinGameBtn.disabled = true;
+
+        peer.on('open', () => {
+            conn = peer.connect(peerIdPrefix + roomCode, { reliable: true });
+            setupConnectionEvents(conn);
+        });
+
+        peer.on('error', err => {
+            showAlert('Error: ' + err.type);
+            if (err.type === 'peer-unavailable') {
+                showAlert('Room not found.');
+            }
+            resetConnectionUI();
+        });
+    }
+
+    function setupConnectionEvents(connection) {
+        connection.on('data', handleData);
+        connection.on('close', () => {
+            if (chatReady) {
+                handleDisconnect();
+            } else {
+                resetConnectionUI();
+            }
+        });
+        connection.on('error', () => {
+            if (chatReady) {
+                handleDisconnect();
+            } else {
+                showAlert('Connection failed.');
+                resetConnectionUI();
+            }
+        });
+
+        const openChat = () => {
+            if (chatReady) return;
+            prepareChat();
+            addMessage('system', 'Connected. Say hi.');
+            sendData({ type: 'name-sync', name: myPlayerName });
+        };
+
+        if (connection.open) {
+            openChat();
+        } else {
+            connection.on('open', openChat);
+        }
+    }
+
+    function handleData(data) {
+        switch (data.type) {
+            case 'name-sync':
+                opponentPlayerName = data.name || 'Friend';
+                chatHeading.textContent = opponentPlayerName;
+                sendData({ type: 'name-reply', name: myPlayerName });
+                addMessage('system', `${opponentPlayerName} joined the room.`);
+                break;
+            case 'name-reply':
+                opponentPlayerName = data.name || 'Friend';
+                chatHeading.textContent = opponentPlayerName;
+                addMessage('system', `${opponentPlayerName} joined the room.`);
+                break;
+            case 'chat-message':
+                addMessage('theirs', data.text || '', opponentPlayerName, data.time);
+                typingIndicator.textContent = '';
+                break;
+            case 'typing':
+                showTyping(Boolean(data.isTyping));
+                break;
+        }
+    }
+
+    function handleDisconnect() {
+        chatReady = false;
+        messageInput.disabled = true;
+        sendMessageBtn.disabled = true;
+        typingIndicator.textContent = '';
+        connectionLabel.textContent = 'Disconnected';
+        addMessage('system', 'The other person disconnected.');
+        showAlert('Connection lost.', 3000);
+    }
+
+    function showTyping(isTyping) {
+        typingIndicator.textContent = isTyping ? `${opponentPlayerName} is typing...` : '';
+    }
+
+    function sendMessage() {
+        const text = messageInput.value.trim();
+        if (!text) return;
+
+        const time = new Date().toISOString();
+        addMessage('mine', text, myPlayerName, time);
+        sendData({ type: 'chat-message', text, time });
+        sendData({ type: 'typing', isTyping: false });
+        messageInput.value = '';
+        autoSizeMessageInput();
+        messageInput.focus();
+    }
+
+    function autoSizeMessageInput() {
+        messageInput.style.height = 'auto';
+        messageInput.style.height = Math.min(messageInput.scrollHeight, 128) + 'px';
+    }
+
+    startConnectBtn.addEventListener('click', () => {
+        setPlayerName();
+        showScreen('connect');
+        roomCodeInput.focus();
+    });
+
+    backBtn.addEventListener('click', () => {
+        cleanupPeer();
+        resetConnectionUI();
+        showScreen('start');
+    });
+
+    hostGameBtn.addEventListener('click', () => {
+        setPlayerName();
+        const roomCode = Math.floor(100000 + Math.random() * 900000).toString();
+        roomCodeInput.value = roomCode;
+        initializeHost(roomCode);
+    });
+
+    joinGameBtn.addEventListener('click', () => {
+        setPlayerName();
+        const roomCode = roomCodeInput.value.trim();
+        if (roomCode.length !== 6) {
+            showAlert('Code must be 6 digits.');
+            return;
+        }
+        initializeJoin(roomCode);
+    });
+
+    copyCodeBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(roomCodeInput.value).then(() => {
+            const originalText = copyCodeBtn.textContent;
+            copyCodeBtn.textContent = 'Copied!';
+            copyCodeBtn.classList.add('copied');
+            copyCodeBtn.disabled = true;
+
+            setTimeout(() => {
+                copyCodeBtn.textContent = originalText;
+                copyCodeBtn.classList.remove('copied');
+                copyCodeBtn.disabled = false;
+            }, 1500);
+        });
+    });
+
+    roomCodeInput.addEventListener('input', () => {
+        roomCodeInput.value = roomCodeInput.value.replace(/\D/g, '').slice(0, 6);
+    });
+
+    roomCodeInput.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+            joinGameBtn.click();
+        }
+    });
+
+    messageForm.addEventListener('submit', event => {
+        event.preventDefault();
+        sendMessage();
+    });
+
+    messageInput.addEventListener('keydown', event => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            sendMessage();
+        }
+    });
+
+    messageInput.addEventListener('input', () => {
+        autoSizeMessageInput();
+        sendData({ type: 'typing', isTyping: messageInput.value.length > 0 });
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => sendData({ type: 'typing', isTyping: false }), 1200);
+    });
+
+    window.addEventListener('beforeunload', cleanupPeer);
+
+    showScreen('start');
+});
+</script>
+</body>
+</html>
