@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#092b1d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Jungle Rumble">
+    <title>Jungle Rumble</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css?v=2026.07.13.5">
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+</head>
+<body>
+    <main class="app-shell">
+        <section id="start-screen" class="screen home-screen">
+            <div class="home-copy">
+                <div class="brand-lockup" aria-label="Jungle Rumble">
+                    <div class="brand-mark">JR</div>
+                    <div>
+                        <h1>Jungle Rumble</h1>
+                        <p>Pick your fighter, jump into practice, or open a PvP room.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="home-panel">
+                <div class="loadout-strip">
+                    <div class="loadout-copy">
+                        <span>Ready Fighter</span>
+                        <strong id="menu-loadout-title">Snake + Pistol</strong>
+                    </div>
+                    <img id="menu-loadout-art" src="assets/snake/pistol/good.png" alt="">
+                </div>
+
+                <label class="field">
+                    <span>Player name</span>
+                    <input type="text" id="player-name-input" maxlength="18" autocomplete="name" placeholder="Ranger">
+                </label>
+
+                <div class="menu-actions home-actions">
+                    <button id="solo-btn" class="btn primary" type="button">Solo Practice</button>
+                    <button id="start-connect-btn" class="btn secondary" type="button">PvP Room</button>
+                    <button id="build-btn" class="btn ghost" type="button">Rumble Lab</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="build-screen" class="screen builder-screen hidden">
+            <button class="icon-btn back-btn" id="back-from-build-btn" type="button" aria-label="Back">‹</button>
+            <div class="builder-garage">
+                <header class="garage-header">
+                    <div>
+                        <span id="builder-step-eyebrow">Step 1 of 2</span>
+                        <h2>Rumble Lab</h2>
+                    </div>
+                    <div class="garage-progress" aria-hidden="true">
+                        <span class="active"></span>
+                        <span></span>
+                    </div>
+                </header>
+
+                <div id="builder-stage" class="garage-stage">
+                    <button id="lab-prev-choice-btn" class="icon-btn garage-arrow prev" type="button" aria-label="Previous choice">‹</button>
+                    <div class="garage-art-frame">
+                        <img id="builder-combo-art" src="assets/snake/pistol/good.png" alt="">
+                    </div>
+                    <button id="lab-next-choice-btn" class="icon-btn garage-arrow next" type="button" aria-label="Next choice">›</button>
+                </div>
+
+                <section class="garage-panel">
+                    <div class="garage-copy">
+                        <span id="builder-preview-label">Snake</span>
+                        <strong id="builder-preview-stats">100 HP · Medium speed</strong>
+                        <small id="builder-weapon-stat" class="hidden">6 ammo · Medium damage · Fast fire</small>
+                        <small id="builder-character-stat">Ability coming soon</small>
+                    </div>
+
+                    <div id="character-options" class="garage-picker character-picker" role="listbox" aria-label="Character"></div>
+                    <div id="weapon-options" class="garage-picker weapon-picker hidden" role="listbox" aria-label="Weapon"></div>
+
+                    <div class="garage-actions">
+                        <button id="builder-step-back-btn" class="btn ghost hidden" type="button">Back</button>
+                        <button id="builder-step-next-btn" class="btn primary" type="button">Pick Weapon</button>
+                        <button id="save-loadout-btn" class="btn primary hidden" type="button">Use This Fighter</button>
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <section id="connection-screen" class="screen menu-screen hidden">
+            <button class="icon-btn back-btn" id="back-to-menu-btn" type="button" aria-label="Back">‹</button>
+            <div class="screen-heading">
+                <h2>Connect</h2>
+                <p>Host a room and share the code, or join a friend on the same room code.</p>
+            </div>
+
+            <div class="room-code-row">
+                <input type="text" id="room-code-input" maxlength="6" inputmode="numeric" autocomplete="off" placeholder="CODE" aria-label="Room code">
+                <button id="copy-code-btn" class="btn ghost hidden" type="button">Copy</button>
+            </div>
+
+            <div class="menu-actions">
+                <button id="host-game-btn" class="btn primary" type="button">Host Room</button>
+                <button id="join-game-btn" class="btn secondary" type="button">Join Room</button>
+            </div>
+
+            <p id="connection-status" class="status-copy">Ready to connect.</p>
+        </section>
+
+        <section id="game-screen" class="screen game-screen hidden">
+            <canvas id="game-canvas" aria-label="Jungle Rumble game canvas"></canvas>
+
+            <div class="hud top-hud">
+                <div class="hud-card health-hud">
+                    <div class="hud-row">
+                        <span>HP</span>
+                        <strong id="health-label">100</strong>
+                    </div>
+                    <div class="hud-health-track" aria-hidden="true">
+                        <div id="hud-health-fill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="exit-game-btn" class="icon-btn exit-btn" type="button" aria-label="Exit game">×</button>
+            <button id="reload-btn" class="reload-btn" type="button" aria-label="Reload">R</button>
+
+            <div id="move-zone" class="control-zone move-zone" aria-hidden="true">
+                <div id="move-stick" class="stick">
+                    <div class="stick-knob"></div>
+                </div>
+            </div>
+
+            <div id="shoot-zone" class="control-zone shoot-zone" aria-hidden="true">
+                <div id="shoot-stick" class="stick shoot">
+                    <div class="stick-knob"></div>
+                </div>
+            </div>
+        </section>
+
+        <div id="alert-screen" role="status" aria-live="polite"></div>
+
+        <section id="install-screen" class="blocking-screen hidden" aria-live="polite">
+            <div class="blocking-mark">JR</div>
+            <h2>Add Jungle Rumble to Home Screen</h2>
+            <p>Open this page from your phone browser, use Share or the browser menu, then choose Add to Home Screen. Launch Jungle Rumble from the new home-screen icon to play.</p>
+            <div class="install-steps">
+                <p><strong>iPhone:</strong> Safari → Share → Add to Home Screen</p>
+                <p><strong>Android:</strong> Chrome → ⋮ → Add to Home screen</p>
+            </div>
+        </section>
+
+        <section id="rotate-screen" class="blocking-screen hidden" aria-live="polite">
+            <div class="rotate-phone" aria-hidden="true"></div>
+            <h2>Switch to Horizontal</h2>
+            <p>Jungle Rumble only plays in landscape. Rotate your phone sideways to continue.</p>
+        </section>
+    </main>
+
+    <script src="app.js?v=2026.07.13.5"></script>
+</body>
+</html>
