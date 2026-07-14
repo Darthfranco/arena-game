@@ -1,0 +1,50 @@
+{
+  "sheet": "/Users/ikeyfranco/Desktop/arena/generated/menu-clean-assets/jungle-rumble-menu-affinity-source-sheet.png",
+  "desktop_sheet": "/Users/ikeyfranco/Desktop/jungle-rumble-menu-affinity-source-sheet.png",
+  "background": "/Users/ikeyfranco/Desktop/arena/generated/menu-clean-assets/jungle-rumble-background-only.png",
+  "positions": {
+    "background-only-image": {
+      "x": 312,
+      "y": 80,
+      "w": 1642,
+      "h": 958
+    },
+    "title-thing": {
+      "x": 199,
+      "y": 1118,
+      "w": 1867,
+      "h": 707
+    },
+    "solo-adventure-button": {
+      "x": 80,
+      "y": 1905,
+      "w": 2106,
+      "h": 558
+    },
+    "pvp-mode-button": {
+      "x": 218,
+      "y": 2543,
+      "w": 1830,
+      "h": 520
+    },
+    "choose-your-rumbler-button": {
+      "x": 198,
+      "y": 3143,
+      "w": 1869,
+      "h": 495
+    },
+    "settings-button": {
+      "x": 217,
+      "y": 3718,
+      "w": 1832,
+      "h": 418
+    }
+  },
+  "assets": {
+    "title-thing": "/Users/ikeyfranco/Desktop/arena/generated/menu-clean-assets/title-thing.png",
+    "solo-adventure-button": "/Users/ikeyfranco/Desktop/arena/generated/menu-clean-assets/solo-adventure-button.png",
+    "pvp-mode-button": "/Users/ikeyfranco/Desktop/arena/generated/menu-clean-assets/pvp-mode-button.png",
+    "choose-your-rumbler-button": "/Users/ikeyfranco/Desktop/arena/generated/menu-clean-assets/choose-your-rumbler-button.png",
+    "settings-button": "/Users/ikeyfranco/Desktop/arena/generated/menu-clean-assets/settings-button.png"
+  }
+}

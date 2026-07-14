@@ -1,4 +1,4 @@
-const APP_VERSION = '2026.07.13.5';
+const APP_VERSION = '2026.07.14.4';
 
 document.addEventListener('DOMContentLoaded', () => {
     setupServiceWorkerUpdates();
@@ -30,6 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const hudHealthFill = document.getElementById('hud-health-fill');
     const exitGameBtn = document.getElementById('exit-game-btn');
     const reloadBtn = document.getElementById('reload-btn');
+    const abilityBtn = document.getElementById('ability-btn');
+    const abilityIcon = abilityBtn.querySelector('img');
+    const abilityCooldown = document.getElementById('ability-cooldown');
     const moveZone = document.getElementById('move-zone');
     const shootZone = document.getElementById('shoot-zone');
     const moveStick = document.getElementById('move-stick');
@@ -38,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const menuLoadoutArt = document.getElementById('menu-loadout-art');
     const characterOptions = document.getElementById('character-options');
     const weaponOptions = document.getElementById('weapon-options');
+    const abilityOptions = document.getElementById('ability-options');
     const builderCharacterStat = document.getElementById('builder-character-stat');
     const builderWeaponStat = document.getElementById('builder-weapon-stat');
     const builderComboArt = document.getElementById('builder-combo-art');
@@ -61,6 +65,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const PLAYER_SPRITE_SIZE = 94;
     const BULLET_SPRITE_SIZE = 68;
     const MOBILE_CAMERA_ZOOM = 0.82;
+    const DASH_COOLDOWN = 3;
+    const DASH_DURATION = 0.24;
+    const DASH_DISTANCE = 230;
+    const GRENADE_COOLDOWN = 4;
+    const GRENADE_FLIGHT_TIME = 0.72;
+    const GRENADE_RANGE = 410;
+    const GRENADE_RADIUS = 118;
+    const GRENADE_DAMAGE = 38;
+    const ABILITY_DRAG_VISUAL_RADIUS = 42;
     const LOADOUT_STORAGE_KEY = 'jungle-rumble-loadout-v1';
     const DEFAULT_LOADOUT = { character: 'snake', weapon: 'pistol', ability: 'dash' };
     const CHARACTERS = {
@@ -139,6 +152,26 @@ document.addEventListener('DOMContentLoaded', () => {
             art: 'assets/weapons/shotgun/good.png'
         }
     };
+    const ABILITIES = {
+        dash: {
+            id: 'dash',
+            name: 'Dash',
+            mode: 'tap',
+            cooldown: DASH_COOLDOWN,
+            stat: 'Tap to burst forward',
+            detail: '3s cooldown',
+            art: 'assets/buttons/dash.png'
+        },
+        grenade: {
+            id: 'grenade',
+            name: 'Grenade',
+            mode: 'drag',
+            cooldown: GRENADE_COOLDOWN,
+            stat: 'Drag to arc throw',
+            detail: 'Big area blast',
+            art: 'assets/buttons/grenade.png'
+        }
+    };
     const colors = {
         local: '#2fbf71',
         remote: '#3977ff',
@@ -178,10 +211,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let builderSwipeStartX = 0;
     let builderSwipeStartY = 0;
     let builderSwipePointer = null;
+    let abilityDrag = null;
 
     const player = createPlayer('local', world.width * 0.34, world.height * 0.5, colors.local, selectedLoadout);
     const remotePlayer = createPlayer('remote', world.width * 0.66, world.height * 0.5, colors.remote, DEFAULT_LOADOUT);
     const bullets = [];
+    const grenades = [];
     const impacts = [];
     const dummies = [
         { x: 900, y: 520, r: 34, hp: 80, maxHp: 80 },
@@ -206,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function normalizeLoadout(value) {
         const character = value && CHARACTERS[value.character] ? value.character : DEFAULT_LOADOUT.character;
         const weapon = value && WEAPONS[value.weapon] ? value.weapon : DEFAULT_LOADOUT.weapon;
-        const ability = 'dash';
+        const ability = value && ABILITIES[value.ability] ? value.ability : DEFAULT_LOADOUT.ability;
         return { character, weapon, ability };
     }
 
@@ -242,11 +277,27 @@ document.addEventListener('DOMContentLoaded', () => {
         return `assets/weapons/bullet/${team}.png`;
     }
 
+    function getDashSpritePath(loadout, team = 'good', frame = 1) {
+        const normalized = normalizeLoadout(loadout);
+        return `assets/${normalized.character}/dash/${normalized.weapon}/${team}/dash_${frame}.png`;
+    }
+
     function loadSpritesForLoadout(loadout) {
         loadSprite(getComboSpritePath(loadout, 'good'));
         loadSprite(getComboSpritePath(loadout, 'bad'));
         loadSprite(getBulletSpritePath('good'));
         loadSprite(getBulletSpritePath('bad'));
+        loadSprite('assets/weapons/grenade/good.png');
+        loadSprite('assets/weapons/grenade/bad.png');
+        for (let frame = 1; frame <= 3; frame++) {
+            loadSprite(getDashSpritePath(loadout, 'good', frame));
+            loadSprite(getDashSpritePath(loadout, 'bad', frame));
+        }
+        loadSprite('assets/buttons/dash.png');
+        loadSprite('assets/buttons/grenade.png');
+        loadSprite('assets/buttons/reload_button.png');
+        loadSprite('assets/buttons/attack_button.png');
+        loadSprite('assets/buttons/move_button.png');
     }
 
     function describeLoadout(loadout) {
@@ -264,22 +315,37 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${weapon.ammo} ammo · ${weapon.damageLabel} damage · ${weapon.rateLabel} fire`;
     }
 
+    function getAbility(id) {
+        return ABILITIES[id] || ABILITIES[DEFAULT_LOADOUT.ability];
+    }
+
+    function abilityStatText(abilityId) {
+        const ability = getAbility(abilityId);
+        return `${ability.stat} · ${ability.detail}`;
+    }
+
     function setBuilderStep(step) {
-        builderStep = step === 'weapon' ? 'weapon' : 'character';
+        builderStep = ['character', 'weapon', 'ability'].includes(step) ? step : 'character';
         updateBuilderUI();
     }
 
     function getChoiceIds() {
-        return builderStep === 'weapon' ? Object.keys(WEAPONS) : Object.keys(CHARACTERS);
+        if (builderStep === 'weapon') return Object.keys(WEAPONS);
+        if (builderStep === 'ability') return Object.keys(ABILITIES);
+        return Object.keys(CHARACTERS);
     }
 
     function getCurrentChoiceId() {
-        return builderStep === 'weapon' ? draftLoadout.weapon : draftLoadout.character;
+        if (builderStep === 'weapon') return draftLoadout.weapon;
+        if (builderStep === 'ability') return draftLoadout.ability;
+        return draftLoadout.character;
     }
 
     function setCurrentChoiceId(id) {
         if (builderStep === 'weapon' && WEAPONS[id]) {
             draftLoadout.weapon = id;
+        } else if (builderStep === 'ability' && ABILITIES[id]) {
+            draftLoadout.ability = id;
         } else if (CHARACTERS[id]) {
             draftLoadout.character = id;
         }
@@ -296,6 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderBuilderOptions() {
         characterOptions.replaceChildren();
         weaponOptions.replaceChildren();
+        abilityOptions.replaceChildren();
 
         Object.values(CHARACTERS).forEach(character => {
             const button = document.createElement('button');
@@ -330,6 +397,23 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             weaponOptions.appendChild(button);
         });
+
+        Object.values(ABILITIES).forEach(ability => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'option-card';
+            button.dataset.ability = ability.id;
+            button.innerHTML = `
+                <img class="option-art" src="${ability.art}" alt="">
+                <strong>${ability.name}</strong>
+                <small>${ability.mode === 'drag' ? 'Drag' : 'Tap'} · ${ability.detail}</small>
+            `;
+            button.addEventListener('click', () => {
+                builderStep = 'ability';
+                setCurrentChoiceId(ability.id);
+            });
+            abilityOptions.appendChild(button);
+        });
     }
 
     function updateBuilderUI(animate = false) {
@@ -342,27 +426,39 @@ document.addEventListener('DOMContentLoaded', () => {
             button.classList.toggle('selected', button.dataset.weapon === draftLoadout.weapon);
             button.classList.toggle('peek', button.dataset.weapon !== draftLoadout.weapon);
         });
+        abilityOptions.querySelectorAll('.option-card').forEach(button => {
+            button.classList.toggle('selected', button.dataset.ability === draftLoadout.ability);
+            button.classList.toggle('peek', button.dataset.ability !== draftLoadout.ability);
+        });
 
         const character = getCharacter(draftLoadout.character);
         const weapon = getWeapon(draftLoadout.weapon);
+        const ability = getAbility(draftLoadout.ability);
+        const onCharacterStep = builderStep === 'character';
         const onWeaponStep = builderStep === 'weapon';
+        const onAbilityStep = builderStep === 'ability';
 
-        characterOptions.classList.toggle('hidden', onWeaponStep);
+        characterOptions.classList.toggle('hidden', !onCharacterStep);
         weaponOptions.classList.toggle('hidden', !onWeaponStep);
-        builderStepBackBtn.classList.toggle('hidden', !onWeaponStep);
-        builderStepNextBtn.classList.toggle('hidden', onWeaponStep);
-        saveLoadoutBtn.classList.toggle('hidden', !onWeaponStep);
+        abilityOptions.classList.toggle('hidden', !onAbilityStep);
+        builderStepBackBtn.classList.toggle('hidden', onCharacterStep);
+        builderStepNextBtn.classList.toggle('hidden', onAbilityStep);
+        saveLoadoutBtn.classList.toggle('hidden', !onAbilityStep);
         builderWeaponStat.classList.toggle('hidden', !onWeaponStep);
-        builderStepEyebrow.textContent = onWeaponStep ? 'Step 2 of 2' : 'Step 1 of 2';
+        builderCharacterStat.classList.toggle('hidden', !onAbilityStep);
+        builderStepEyebrow.textContent = onAbilityStep ? 'Step 3 of 3' : onWeaponStep ? 'Step 2 of 3' : 'Step 1 of 3';
         document.querySelectorAll('.garage-progress span').forEach((dot, index) => {
-            dot.classList.toggle('active', index === (onWeaponStep ? 1 : 0));
+            dot.classList.toggle('active', index === (onAbilityStep ? 2 : onWeaponStep ? 1 : 0));
         });
+        builderStepNextBtn.textContent = onWeaponStep ? 'Pick Ability' : 'Pick Weapon';
 
-        builderCharacterStat.textContent = 'Ability coming soon';
+        builderCharacterStat.textContent = abilityStatText(draftLoadout.ability);
         builderWeaponStat.textContent = weaponStatText(draftLoadout.weapon);
         builderComboArt.src = getComboSpritePath(draftLoadout, 'good');
-        builderPreviewLabel.textContent = onWeaponStep ? weapon.name : character.name;
-        builderPreviewStats.textContent = onWeaponStep
+        builderPreviewLabel.textContent = onAbilityStep ? ability.name : onWeaponStep ? weapon.name : character.name;
+        builderPreviewStats.textContent = onAbilityStep
+            ? abilityStatText(draftLoadout.ability)
+            : onWeaponStep
             ? `${weapon.rangeLabel} range · ${weapon.damageLabel} damage`
             : characterStatText(draftLoadout.character);
         if (animate) {
@@ -379,13 +475,23 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedLoadout = normalizeLoadout(selectedLoadout);
         menuLoadoutTitle.textContent = describeLoadout(selectedLoadout);
         menuLoadoutArt.src = getComboSpritePath(selectedLoadout, 'good');
+        updateAbilityButtonArt();
         loadSpritesForLoadout(selectedLoadout);
+    }
+
+    function updateAbilityButtonArt() {
+        const sourceLoadout = running ? player.loadout : selectedLoadout;
+        const ability = getAbility(sourceLoadout.ability);
+        abilityIcon.src = ability.art;
+        abilityIcon.alt = '';
+        abilityBtn.dataset.ability = ability.id;
     }
 
     function createPlayer(id, x, y, color, loadout = DEFAULT_LOADOUT) {
         const normalizedLoadout = normalizeLoadout(loadout);
         const character = getCharacter(normalizedLoadout.character);
         const weapon = getWeapon(normalizedLoadout.weapon);
+        const ability = getAbility(normalizedLoadout.ability);
         return {
             id,
             name: id,
@@ -409,6 +515,11 @@ document.addEventListener('DOMContentLoaded', () => {
             reloadProgress: 0,
             reloading: false,
             cooldown: 0,
+            abilityCooldown: 0,
+            abilityCooldownMax: ability.cooldown,
+            dashTimer: 0,
+            dashDuration: DASH_DURATION,
+            dashAngle: id === 'local' ? 0 : Math.PI,
             invuln: 0,
             alive: true,
             targetAimAngle: id === 'local' ? 0 : Math.PI,
@@ -428,13 +539,17 @@ document.addEventListener('DOMContentLoaded', () => {
         entity.hp = refill ? character.hp : Math.max(1, Math.round(character.hp * hpPct));
         entity.maxAmmo = weapon.ammo;
         entity.reloadDuration = weapon.reloadDuration;
+        entity.abilityCooldownMax = getAbility(normalized.ability).cooldown;
         if (refill) {
             entity.ammo = weapon.ammo;
             entity.reloading = false;
             entity.reloadTimer = 0;
             entity.reloadProgress = 0;
+            entity.abilityCooldown = 0;
+            entity.dashTimer = 0;
         } else {
             entity.ammo = clamp(entity.ammo, 0, weapon.ammo);
+            entity.abilityCooldown = clamp(entity.abilityCooldown, 0, entity.abilityCooldownMax);
         }
         loadSpritesForLoadout(normalized);
     }
@@ -622,6 +737,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 maxAmmo: player.maxAmmo,
                 reloading: player.reloading,
                 reloadProgress: player.reloadProgress,
+                abilityCooldown: player.abilityCooldown,
+                dashTimer: player.dashTimer,
+                dashAngle: player.dashAngle,
                 loadout: player.loadout
             });
         };
@@ -650,6 +768,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 maxAmmo: player.maxAmmo,
                 reloading: player.reloading,
                 reloadProgress: player.reloadProgress,
+                abilityCooldown: player.abilityCooldown,
+                dashTimer: player.dashTimer,
+                dashAngle: player.dashAngle,
                 loadout: player.loadout
             });
             showAlert(`${opponentName} joined.`);
@@ -681,6 +802,21 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        if (data.type === 'ability') {
+            applyRemoteSnapshot(data, false);
+            if (data.ability === 'grenade') {
+                spawnGrenade(
+                    finiteNumber(data.x, remotePlayer.x),
+                    finiteNumber(data.y, remotePlayer.y),
+                    finiteNumber(data.targetX, remotePlayer.x),
+                    finiteNumber(data.targetY, remotePlayer.y),
+                    true,
+                    data.id || ''
+                );
+            }
+            return;
+        }
+
         if (data.type === 'hit') {
             remotePlayer.hp = typeof data.hp === 'number'
                 ? data.hp
@@ -704,6 +840,9 @@ document.addEventListener('DOMContentLoaded', () => {
         remotePlayer.maxAmmo = typeof data.maxAmmo === 'number' ? data.maxAmmo : remotePlayer.maxAmmo;
         remotePlayer.reloading = Boolean(data.reloading);
         remotePlayer.reloadProgress = typeof data.reloadProgress === 'number' ? clamp(data.reloadProgress, 0, 1) : remotePlayer.reloadProgress;
+        remotePlayer.abilityCooldown = typeof data.abilityCooldown === 'number' ? clamp(data.abilityCooldown, 0, getAbility(remotePlayer.loadout.ability).cooldown) : remotePlayer.abilityCooldown;
+        remotePlayer.dashTimer = typeof data.dashTimer === 'number' ? clamp(data.dashTimer, 0, DASH_DURATION) : remotePlayer.dashTimer;
+        remotePlayer.dashAngle = typeof data.dashAngle === 'number' ? data.dashAngle : remotePlayer.dashAngle;
         remotePlayer.alive = data.alive !== false;
         remotePlayer.lastSeen = performance.now();
 
@@ -745,8 +884,10 @@ document.addEventListener('DOMContentLoaded', () => {
         Object.assign(player, createPlayer('local', localSpawnX, world.height * 0.5, colors.local, selectedLoadout), { name: playerName });
         Object.assign(remotePlayer, createPlayer('remote', remoteSpawnX, world.height * 0.5, colors.remote, DEFAULT_LOADOUT), { name: opponentName });
         bullets.length = 0;
+        grenades.length = 0;
         impacts.length = 0;
         dummies.forEach(dummy => dummy.hp = dummy.maxHp);
+        updateAbilityButtonArt();
         updateHud();
     }
 
@@ -759,6 +900,7 @@ document.addEventListener('DOMContentLoaded', () => {
         shootStick.style.top = '50%';
         updateStick(moveStick, 0, 0);
         updateStick(shootStick, 0, 0);
+        resetAbilityKnob();
     }
 
     function resetJoystickState(state) {
@@ -788,6 +930,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updatePlayer(dt);
         updateRemotePlayer(dt);
         updateBullets(dt);
+        updateGrenades(dt);
         updateImpacts(dt);
         updateHud();
 
@@ -805,6 +948,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 maxAmmo: player.maxAmmo,
                 reloading: player.reloading,
                 reloadProgress: player.reloadProgress,
+                abilityCooldown: player.abilityCooldown,
+                dashTimer: player.dashTimer,
+                dashAngle: player.dashAngle,
                 alive: player.alive,
                 loadout: player.loadout
             });
@@ -816,7 +962,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const move = input.move;
         player.cooldown = Math.max(0, player.cooldown - dt);
         player.invuln = Math.max(0, player.invuln - dt);
+        updateAbilityTimers(player, dt);
         updateReload(player, dt);
+
+        if (player.dashTimer > 0) {
+            const dashSpeed = DASH_DISTANCE / DASH_DURATION;
+            player.vx = Math.cos(player.dashAngle) * dashSpeed;
+            player.vy = Math.sin(player.dashAngle) * dashSpeed;
+            player.aimAngle = lerpAngle(player.aimAngle, player.dashAngle, lerpFactor(18, dt));
+            movePlayerWithCollision(player, player.vx * dt, player.vy * dt);
+            return;
+        }
 
         if (move.power > 0.05) {
             const speed = player.speed * Math.min(1, move.power);
@@ -834,6 +990,210 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         movePlayerWithCollision(player, player.vx * dt, player.vy * dt);
+    }
+
+    function updateAbilityTimers(entity, dt) {
+        entity.abilityCooldown = Math.max(0, entity.abilityCooldown - dt);
+        entity.dashTimer = Math.max(0, entity.dashTimer - dt);
+    }
+
+    function getDashAngle() {
+        if (input.move.power > 0.08) {
+            return Math.atan2(input.move.y, input.move.x);
+        }
+        if (input.aim.active && input.aim.power > 0.08) {
+            return Math.atan2(input.aim.y, input.aim.x);
+        }
+        return player.aimAngle;
+    }
+
+    function activateDash() {
+        if (player.hp <= 0 || player.abilityCooldown > 0 || player.dashTimer > 0) return;
+        const angle = getDashAngle();
+        player.dashAngle = angle;
+        player.dashTimer = DASH_DURATION;
+        player.dashDuration = DASH_DURATION;
+        player.abilityCooldown = DASH_COOLDOWN;
+        player.abilityCooldownMax = DASH_COOLDOWN;
+        player.aimAngle = angle;
+        updateHud();
+        sendData({
+            type: 'ability',
+            ability: 'dash',
+            x: player.x,
+            y: player.y,
+            aimAngle: player.aimAngle,
+            hp: player.hp,
+            ammo: player.ammo,
+            maxAmmo: player.maxAmmo,
+            reloading: player.reloading,
+            reloadProgress: player.reloadProgress,
+            abilityCooldown: player.abilityCooldown,
+            dashTimer: player.dashTimer,
+            dashAngle: player.dashAngle,
+            alive: player.alive,
+            loadout: player.loadout
+        });
+    }
+
+    function canUseAbility() {
+        return player.hp > 0 && player.abilityCooldown <= 0 && player.dashTimer <= 0;
+    }
+
+    function beginAbilityDrag(event) {
+        if (!canUseAbility()) return;
+        const ability = getAbility(player.loadout.ability);
+        if (ability.id === 'dash') {
+            activateDash();
+            return;
+        }
+
+        const pointerId = event.pointerId ?? 'mouse';
+        abilityDrag = {
+            pointerId,
+            startX: event.clientX,
+            startY: event.clientY,
+            angle: player.aimAngle,
+            power: 0
+        };
+        if (event.pointerId !== undefined) {
+            abilityBtn.setPointerCapture(event.pointerId);
+        }
+        updateAbilityDrag(event);
+    }
+
+    function updateAbilityDrag(event) {
+        const pointerId = event.pointerId ?? 'mouse';
+        if (!abilityDrag || abilityDrag.pointerId !== pointerId) return;
+        const aim = getGrenadeAimFromDrag(abilityDrag.startX, abilityDrag.startY, event.clientX, event.clientY);
+        abilityDrag.angle = aim.angle;
+        abilityDrag.power = aim.power;
+        setAbilityKnobOffset(event.clientX - abilityDrag.startX, event.clientY - abilityDrag.startY);
+    }
+
+    function finishAbilityDrag(event) {
+        const pointerId = event.pointerId ?? 'mouse';
+        if (!abilityDrag || abilityDrag.pointerId !== pointerId) return;
+        const drag = abilityDrag;
+        abilityDrag = null;
+        resetAbilityKnob();
+        if (drag.power < 0.16 || !canUseAbility()) return;
+        const target = getLiveGrenadeTarget(drag);
+        throwGrenade(target.x, target.y);
+    }
+
+    function cancelAbilityDrag(event) {
+        const pointerId = event.pointerId ?? 'mouse';
+        if (abilityDrag && abilityDrag.pointerId === pointerId) {
+            abilityDrag = null;
+            resetAbilityKnob();
+        }
+    }
+
+    function setAbilityKnobOffset(dx, dy) {
+        const dist = Math.hypot(dx, dy);
+        const limited = Math.min(dist, ABILITY_DRAG_VISUAL_RADIUS);
+        const x = dist > 0 ? (dx / dist) * limited : 0;
+        const y = dist > 0 ? (dy / dist) * limited : 0;
+        abilityBtn.classList.add('dragging');
+        abilityBtn.style.setProperty('--ability-knob-x', `${x}px`);
+        abilityBtn.style.setProperty('--ability-knob-y', `${y}px`);
+    }
+
+    function resetAbilityKnob() {
+        abilityBtn.classList.remove('dragging');
+        abilityBtn.style.setProperty('--ability-knob-x', '0px');
+        abilityBtn.style.setProperty('--ability-knob-y', '0px');
+    }
+
+    function getGrenadeAimFromDrag(startX, startY, clientX, clientY) {
+        const dx = clientX - startX;
+        const dy = clientY - startY;
+        const dist = Math.hypot(dx, dy);
+        const angle = dist > 0 ? Math.atan2(dy, dx) : player.aimAngle;
+        const power = clamp(dist / 92, 0, 1);
+        return { angle, power };
+    }
+
+    function getLiveGrenadeTarget(drag) {
+        const angle = Number.isFinite(drag.angle) ? drag.angle : player.aimAngle;
+        const power = clamp(drag.power || 0, 0, 1);
+        const range = 120 + power * (GRENADE_RANGE - 120);
+        return {
+            x: clamp(player.x + Math.cos(angle) * range, GRENADE_RADIUS, world.width - GRENADE_RADIUS),
+            y: clamp(player.y + Math.sin(angle) * range, GRENADE_RADIUS, world.height - GRENADE_RADIUS)
+        };
+    }
+
+    function throwGrenade(targetX, targetY) {
+        const ability = getAbility(player.loadout.ability);
+        if (ability.id !== 'grenade') return;
+        const target = clampGrenadeTarget(player.x, player.y, targetX, targetY);
+        player.abilityCooldown = ability.cooldown;
+        player.abilityCooldownMax = ability.cooldown;
+        const angle = Math.atan2(target.y - player.y, target.x - player.x);
+        player.aimAngle = angle;
+        const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        spawnGrenade(player.x, player.y, target.x, target.y, false, id);
+        updateHud();
+        sendData({
+            type: 'ability',
+            ability: 'grenade',
+            id,
+            x: player.x,
+            y: player.y,
+            aimAngle: player.aimAngle,
+            targetX: target.x,
+            targetY: target.y,
+            hp: player.hp,
+            ammo: player.ammo,
+            maxAmmo: player.maxAmmo,
+            reloading: player.reloading,
+            reloadProgress: player.reloadProgress,
+            abilityCooldown: player.abilityCooldown,
+            dashTimer: player.dashTimer,
+            dashAngle: player.dashAngle,
+            alive: player.alive,
+            loadout: player.loadout
+        });
+    }
+
+    function spawnGrenade(startX, startY, targetX, targetY, remote = false, id = '') {
+        const target = clampGrenadeTarget(startX, startY, targetX, targetY);
+        const dx = target.x - startX;
+        const dy = target.y - startY;
+        const dist = Math.hypot(dx, dy) || 1;
+        const arcLift = clamp(dist * 0.34, 78, 150);
+        grenades.push({
+            id,
+            startX,
+            startY,
+            endX: target.x,
+            endY: target.y,
+            controlX: (startX + target.x) / 2,
+            controlY: (startY + target.y) / 2 - arcLift,
+            x: startX,
+            y: startY,
+            elapsed: 0,
+            duration: GRENADE_FLIGHT_TIME,
+            scale: 0.78,
+            radius: GRENADE_RADIUS,
+            damage: GRENADE_DAMAGE,
+            remote,
+            color: remote ? colors.enemyBullet : colors.local
+        });
+    }
+
+    function clampGrenadeTarget(startX, startY, targetX, targetY) {
+        const dx = finiteNumber(targetX, startX) - startX;
+        const dy = finiteNumber(targetY, startY) - startY;
+        const dist = Math.hypot(dx, dy);
+        const angle = dist > 0 ? Math.atan2(dy, dx) : player.aimAngle;
+        const range = clamp(dist || 120, 120, GRENADE_RANGE);
+        return {
+            x: clamp(startX + Math.cos(angle) * range, GRENADE_RADIUS, world.width - GRENADE_RADIUS),
+            y: clamp(startY + Math.sin(angle) * range, GRENADE_RADIUS, world.height - GRENADE_RADIUS)
+        };
     }
 
     function startReload(entity) {
@@ -857,6 +1217,9 @@ document.addEventListener('DOMContentLoaded', () => {
             maxAmmo: player.maxAmmo,
             reloading: player.reloading,
             reloadProgress: player.reloadProgress,
+            abilityCooldown: player.abilityCooldown,
+            dashTimer: player.dashTimer,
+            dashAngle: player.dashAngle,
             alive: player.alive,
             loadout: player.loadout
         });
@@ -882,6 +1245,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateRemotePlayer(dt) {
         if (gameMode !== 'pvp') return;
         updateRemoteReload(remotePlayer, dt);
+        updateAbilityTimers(remotePlayer, dt);
 
         const dx = remotePlayer.x - remotePlayer.visualX;
         const dy = remotePlayer.y - remotePlayer.visualY;
@@ -982,6 +1346,51 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function updateGrenades(dt) {
+        for (let i = grenades.length - 1; i >= 0; i--) {
+            const grenade = grenades[i];
+            grenade.elapsed += dt;
+            const t = clamp(grenade.elapsed / grenade.duration, 0, 1);
+            const pos = getGrenadePosition(grenade, t);
+            grenade.x = pos.x;
+            grenade.y = pos.y;
+            grenade.scale = 0.78 + Math.sin(t * Math.PI) * 0.42;
+
+            if (t >= 1) {
+                explodeGrenade(grenade);
+                grenades.splice(i, 1);
+            }
+        }
+    }
+
+    function getGrenadePosition(grenade, t) {
+        const one = 1 - t;
+        return {
+            x: one * one * grenade.startX + 2 * one * t * grenade.controlX + t * t * grenade.endX,
+            y: one * one * grenade.startY + 2 * one * t * grenade.controlY + t * t * grenade.endY
+        };
+    }
+
+    function explodeGrenade(grenade) {
+        addImpact(grenade.endX, grenade.endY, grenade.color, grenade.radius, 0.36, 7);
+
+        if (gameMode === 'solo' && !grenade.remote) {
+            for (const dummy of dummies) {
+                if (dummy.hp > 0 && Math.hypot(dummy.x - grenade.endX, dummy.y - grenade.endY) <= grenade.radius + dummy.r) {
+                    dummy.hp = Math.max(0, dummy.hp - grenade.damage);
+                    score += dummy.hp === 0 ? 5 : 1;
+                }
+            }
+        }
+
+        if (gameMode === 'pvp' && grenade.remote && player.invuln <= 0 && Math.hypot(player.x - grenade.endX, player.y - grenade.endY) <= grenade.radius + player.r) {
+            player.hp = Math.max(0, player.hp - grenade.damage);
+            player.invuln = 0.45;
+            sendData({ type: 'hit', damage: grenade.damage, hp: player.hp });
+            if (player.hp <= 0) respawnPlayer(player);
+        }
+    }
+
     function updateImpacts(dt) {
         for (let i = impacts.length - 1; i >= 0; i--) {
             impacts[i].life -= dt;
@@ -993,8 +1402,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return obstacles.some(rect => point.x > rect.x && point.x < rect.x + rect.w && point.y > rect.y && point.y < rect.y + rect.h);
     }
 
-    function addImpact(x, y, color) {
-        impacts.push({ x, y, color, life: 0.22, maxLife: 0.22 });
+    function addImpact(x, y, color, radius = 28, life = 0.22, lineWidth = 4) {
+        impacts.push({ x, y, color, radius, lineWidth, life, maxLife: life });
     }
 
     function fire(angle = player.aimAngle) {
@@ -1075,9 +1484,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateHud() {
         const healthPct = clamp(player.hp / player.maxHp, 0, 1);
+        const ability = getAbility(player.loadout.ability);
         healthLabel.textContent = Math.ceil(player.hp).toString();
         hudHealthFill.style.width = `${healthPct * 100}%`;
         reloadBtn.disabled = player.ammo >= player.maxAmmo || player.reloading;
+        const abilityOnCooldown = player.abilityCooldown > 0;
+        abilityBtn.disabled = abilityOnCooldown || player.hp <= 0;
+        abilityCooldown.textContent = abilityOnCooldown ? Math.ceil(player.abilityCooldown).toString() : '';
+        abilityBtn.classList.toggle('drag-ready', ability.mode === 'drag' && !abilityOnCooldown);
+        abilityBtn.setAttribute('aria-label', abilityOnCooldown ? `${ability.name} cooling down ${Math.ceil(player.abilityCooldown)}` : ability.mode === 'drag' ? `${ability.name}. Drag to throw.` : ability.name);
     }
 
     function draw() {
@@ -1092,8 +1507,10 @@ document.addEventListener('DOMContentLoaded', () => {
         drawPlayer(remotePlayer, true);
         drawPlayer(player, false);
         drawBullets();
+        drawGrenades();
         drawImpacts();
         drawAimGuide(camera);
+        drawAbilityGuide();
 
         ctx.restore();
     }
@@ -1189,7 +1606,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.translate(drawX, drawY);
         ctx.rotate(entity.aimAngle - Math.PI / 2);
 
-        const sprite = loadSprite(getComboSpritePath(entity.loadout, isRemote ? 'bad' : 'good'));
+        const sprite = loadSprite(getPlayerSpritePath(entity, isRemote ? 'bad' : 'good'));
         if (spriteReady(sprite)) {
             ctx.drawImage(sprite, -PLAYER_SPRITE_SIZE / 2, -PLAYER_SPRITE_SIZE / 2, PLAYER_SPRITE_SIZE, PLAYER_SPRITE_SIZE);
         } else {
@@ -1214,6 +1631,16 @@ document.addEventListener('DOMContentLoaded', () => {
         drawAmmoBar(drawX - 32, drawY - 36, 64, 7, entity);
     }
 
+    function getPlayerSpritePath(entity, team) {
+        if (entity.dashTimer > 0) {
+            const duration = entity.dashDuration || DASH_DURATION;
+            const progress = clamp(1 - entity.dashTimer / duration, 0, 0.999);
+            const frame = Math.floor(progress * 3) + 1;
+            return getDashSpritePath(entity.loadout, team, frame);
+        }
+        return getComboSpritePath(entity.loadout, team);
+    }
+
     function drawBullets() {
         for (const bullet of bullets) {
             const sprite = loadSprite(getBulletSpritePath(bullet.remote ? 'bad' : 'good'));
@@ -1235,6 +1662,55 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function drawGrenades() {
+        for (const grenade of grenades) {
+            const sprite = loadSprite(`assets/weapons/grenade/${grenade.remote ? 'bad' : 'good'}.png`);
+            ctx.save();
+            ctx.translate(grenade.x, grenade.y);
+            const angle = Math.atan2(grenade.endY - grenade.startY, grenade.endX - grenade.startX);
+            ctx.rotate(angle - Math.PI / 2);
+            const size = BULLET_SPRITE_SIZE * 0.9 * grenade.scale;
+            if (spriteReady(sprite)) {
+                ctx.drawImage(sprite, -size / 2, -size / 2, size, size);
+            } else {
+                ctx.fillStyle = grenade.color;
+                ctx.beginPath();
+                ctx.arc(0, 0, 14 * grenade.scale, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+    }
+
+    function drawAbilityGuide() {
+        if (!abilityDrag || abilityDrag.power <= 0.05) return;
+        const startX = player.x;
+        const startY = player.y;
+        const target = getLiveGrenadeTarget(abilityDrag);
+        const endX = target.x;
+        const endY = target.y;
+        const dist = Math.hypot(endX - startX, endY - startY);
+        const controlX = (startX + endX) / 2;
+        const controlY = (startY + endY) / 2 - clamp(dist * 0.34, 78, 150);
+
+        ctx.save();
+        ctx.strokeStyle = 'rgba(57, 200, 111, 0.84)';
+        ctx.lineWidth = 5;
+        ctx.setLineDash([12, 9]);
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.quadraticCurveTo(controlX, controlY, endX, endY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.strokeStyle = 'rgba(57, 200, 111, 0.34)';
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.arc(endX, endY, GRENADE_RADIUS, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+
     function spriteReady(sprite) {
         return sprite.complete && sprite.naturalWidth > 0;
     }
@@ -1244,9 +1720,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const t = impact.life / impact.maxLife;
             ctx.strokeStyle = impact.color;
             ctx.globalAlpha = t;
-            ctx.lineWidth = 4;
+            ctx.lineWidth = impact.lineWidth || 4;
             ctx.beginPath();
-            ctx.arc(impact.x, impact.y, (1 - t) * 28, 0, Math.PI * 2);
+            ctx.arc(impact.x, impact.y, (1 - t) * (impact.radius || 28), 0, Math.PI * 2);
             ctx.stroke();
             ctx.globalAlpha = 1;
         }
@@ -1471,6 +1947,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     maxAmmo: player.maxAmmo,
                     reloading: player.reloading,
                     reloadProgress: player.reloadProgress,
+                    abilityCooldown: player.abilityCooldown,
+                    dashTimer: player.dashTimer,
+                    dashAngle: player.dashAngle,
+                    ability: player.loadout.ability,
                     loadout: player.loadout
                 },
                 remote: {
@@ -1484,10 +1964,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     maxAmmo: remotePlayer.maxAmmo,
                     reloading: remotePlayer.reloading,
                     reloadProgress: remotePlayer.reloadProgress,
+                    abilityCooldown: remotePlayer.abilityCooldown,
+                    dashTimer: remotePlayer.dashTimer,
+                    dashAngle: remotePlayer.dashAngle,
+                    ability: remotePlayer.loadout.ability,
                     loadout: remotePlayer.loadout
                 },
                 selectedLoadout,
                 bullets: bullets.length,
+                grenades: grenades.length,
                 move: { ...input.move },
                 aim: { ...input.aim },
                 connected: Boolean(conn && conn.open),
@@ -1520,8 +2005,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     saveLoadoutBtn.addEventListener('click', saveSelectedLoadout);
-    builderStepBackBtn.addEventListener('click', () => setBuilderStep('character'));
-    builderStepNextBtn.addEventListener('click', () => setBuilderStep('weapon'));
+    builderStepBackBtn.addEventListener('click', () => {
+        setBuilderStep(builderStep === 'ability' ? 'weapon' : 'character');
+    });
+    builderStepNextBtn.addEventListener('click', () => {
+        setBuilderStep(builderStep === 'weapon' ? 'ability' : 'weapon');
+    });
     labPrevChoiceBtn.addEventListener('click', () => cycleBuilderChoice(-1));
     labNextChoiceBtn.addEventListener('click', () => cycleBuilderChoice(1));
 
@@ -1607,6 +2096,39 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
         tryManualReload();
     });
+    abilityBtn.addEventListener('pointerdown', event => {
+        event.preventDefault();
+        beginAbilityDrag(event);
+    });
+    abilityBtn.addEventListener('pointermove', event => {
+        if (!abilityDrag) return;
+        event.preventDefault();
+        updateAbilityDrag(event);
+    });
+    abilityBtn.addEventListener('pointerup', event => {
+        event.preventDefault();
+        finishAbilityDrag(event);
+    });
+    abilityBtn.addEventListener('pointercancel', event => {
+        event.preventDefault();
+        cancelAbilityDrag(event);
+    });
+    abilityBtn.addEventListener('mousedown', event => {
+        if (abilityDrag) return;
+        event.preventDefault();
+        beginAbilityDrag(event);
+    });
+    window.addEventListener('mousemove', event => {
+        if (!abilityDrag || abilityDrag.pointerId !== 'mouse') return;
+        event.preventDefault();
+        updateAbilityDrag(event);
+    });
+    window.addEventListener('mouseup', event => {
+        if (!abilityDrag || abilityDrag.pointerId !== 'mouse') return;
+        event.preventDefault();
+        finishAbilityDrag(event);
+    });
+    abilityBtn.addEventListener('click', event => event.preventDefault());
     window.addEventListener('resize', scheduleViewportResize);
     window.addEventListener('orientationchange', scheduleViewportResize);
     if (window.visualViewport) {

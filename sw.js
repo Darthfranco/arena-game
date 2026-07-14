@@ -1,4 +1,14 @@
-const CACHE_NAME = 'jungle-rumble-pwa-v4';
+const CACHE_NAME = 'jungle-rumble-pwa-v13';
+const CHARACTER_IDS = ['snake', 'croc', 'parrot'];
+const WEAPON_IDS = ['pistol', 'rifle', 'shotgun'];
+const TEAM_IDS = ['good', 'bad'];
+const DASH_ASSETS = CHARACTER_IDS.flatMap(character =>
+    WEAPON_IDS.flatMap(weapon =>
+        TEAM_IDS.flatMap(team =>
+            [1, 2, 3].map(frame => `./assets/${character}/dash/${weapon}/${team}/dash_${frame}.png`)
+        )
+    )
+);
 const APP_SHELL = [
     './',
     './index.html',
@@ -11,6 +21,11 @@ const APP_SHELL = [
     './assets/icons/jungle-rumble-icon-512.png',
     './assets/icons/jungle-rumble-maskable-192.png',
     './assets/icons/jungle-rumble-maskable-512.png',
+    './assets/buttons/dash.png',
+    './assets/buttons/grenade.png',
+    './assets/buttons/reload_button.png',
+    './assets/buttons/attack_button.png',
+    './assets/buttons/move_button.png',
     './assets/snake/snake_face.png',
     './assets/croc/croc_face.png',
     './assets/parrot/parrot_face.png',
@@ -35,8 +50,11 @@ const APP_SHELL = [
     './assets/weapons/pistol/good.png',
     './assets/weapons/rifle/good.png',
     './assets/weapons/shotgun/good.png',
+    './assets/weapons/grenade/good.png',
+    './assets/weapons/grenade/bad.png',
     './assets/weapons/bullet/good.png',
-    './assets/weapons/bullet/bad.png'
+    './assets/weapons/bullet/bad.png',
+    ...DASH_ASSETS
 ];
 
 self.addEventListener('install', event => {
