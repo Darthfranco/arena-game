@@ -10,14 +10,14 @@
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="styles.css?v=2026.07.15.7">
+    <link rel="stylesheet" href="styles.css?v=2026.07.15.8">
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 <body>
     <main class="app-shell">
         <section id="start-screen" class="screen art-menu-screen">
             <div class="art-menu-frame main-menu-frame" aria-label="Jungle Rumble main menu">
-                <img class="menu-art" src="assets/menu/jungle-rumble-menu.png?v=2026.07.15.7" alt="">
+                <img class="menu-art" src="assets/menu/jungle-rumble-menu.png?v=2026.07.15.8" alt="">
                 <strong id="menu-loadout-title" class="sr-only">Snake + Pistol</strong>
                 <img id="menu-loadout-art" class="menu-character-preview" src="assets/snake/pistol/good.png" alt="">
                 <input class="menu-name-input" type="text" id="player-name-input" maxlength="18" autocomplete="name" placeholder="Ranger" aria-label="Rumbler name">
@@ -30,7 +30,7 @@
 
         <section id="settings-screen" class="screen art-menu-screen hidden">
             <div class="art-menu-frame settings-menu-frame" aria-label="Settings menu">
-                <img class="menu-art" src="assets/menu/jungle-rumble-settings-menu.png?v=2026.07.15.7" alt="">
+                <img class="menu-art" src="assets/menu/jungle-rumble-settings-menu.png?v=2026.07.15.8" alt="">
                 <button id="settings-back-btn" class="settings-back-btn" type="button" aria-label="Back">‹</button>
                 <button id="music-toggle-btn" class="settings-toggle settings-toggle-music" type="button" aria-label="Music" aria-pressed="true"></button>
                 <button id="sound-toggle-btn" class="settings-toggle settings-toggle-sounds" type="button" aria-label="Sounds" aria-pressed="true"></button>
@@ -41,7 +41,7 @@
 
         <section id="build-screen" class="screen art-menu-screen chooser-screen hidden">
             <div class="art-menu-frame chooser-menu-frame" aria-label="Choose your rumbler">
-                <img class="menu-art" src="assets/menu/choose-your-rumbler-menu.png?v=2026.07.15.7" alt="">
+                <img class="menu-art" src="assets/menu/choose-your-rumbler-menu.png?v=2026.07.15.8" alt="">
                 <button class="chooser-tab chooser-tab-character" type="button" data-builder-step="character" aria-label="Character"></button>
                 <button class="chooser-tab chooser-tab-weapon" type="button" data-builder-step="weapon" aria-label="Weapon"></button>
                 <button class="chooser-tab chooser-tab-ability" type="button" data-builder-step="ability" aria-label="Ability"></button>
@@ -108,6 +108,7 @@
                     </div>
                     <div class="hud-health-track" aria-hidden="true">
                         <div id="hud-health-fill"></div>
+                        <div id="hud-shield-fill"></div>
                     </div>
                 </div>
             </div>
@@ -157,6 +158,6 @@
         </section>
     </main>
 
-    <script src="app.js?v=2026.07.15.7"></script>
+    <script src="app.js?v=2026.07.15.8"></script>
 </body>
 </html>

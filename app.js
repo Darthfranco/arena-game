@@ -1,4 +1,4 @@
-const APP_VERSION = '2026.07.15.7';
+const APP_VERSION = '2026.07.15.8';
 
 document.addEventListener('DOMContentLoaded', () => {
     setupServiceWorkerUpdates();
@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
     const healthLabel = document.getElementById('health-label');
     const hudHealthFill = document.getElementById('hud-health-fill');
+    const hudShieldFill = document.getElementById('hud-shield-fill');
     const exitGameBtn = document.getElementById('exit-game-btn');
     const reloadBtn = document.getElementById('reload-btn');
     const abilityBtn = document.getElementById('ability-btn');
@@ -87,6 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const INVIS_DURATION = 2;
     const INVIS_COOLDOWN = 5;
     const ONE_SHOT_COOLDOWN = 12;
+    const SHIELD_UP_COOLDOWN = 4;
+    const SHIELD_UP_AMOUNT = 30;
+    const SHIELD_MAX = 100;
     const ABILITY_DRAG_VISUAL_RADIUS = 42;
     const LOADOUT_STORAGE_KEY = 'jungle-rumble-loadout-v1';
     const SETTINGS_STORAGE_KEY = 'jungle-rumble-settings-v1';
@@ -204,6 +208,24 @@ document.addEventListener('DOMContentLoaded', () => {
             stat: 'Combines all ammo',
             detail: '12s cooldown after reload',
             art: 'assets/buttons/OneShot_button.png'
+        },
+        autoReload: {
+            id: 'autoReload',
+            name: 'Auto Reload',
+            mode: 'passive',
+            cooldown: 0,
+            stat: 'Ammo reloads one by one',
+            detail: 'Passive reload',
+            art: 'assets/buttons/autoreload_button.png'
+        },
+        shieldUp: {
+            id: 'shieldUp',
+            name: 'Shield Up',
+            mode: 'tap',
+            cooldown: SHIELD_UP_COOLDOWN,
+            stat: '+30 shield health',
+            detail: '4s cooldown · 100 max',
+            art: 'assets/buttons/shield_button.png'
         }
     };
     const colors = {
@@ -367,6 +389,8 @@ document.addEventListener('DOMContentLoaded', () => {
         loadSprite('assets/buttons/grenade.png');
         loadSprite('assets/buttons/Invis_button.png');
         loadSprite('assets/buttons/OneShot_button.png');
+        loadSprite('assets/buttons/autoreload_button.png');
+        loadSprite('assets/buttons/shield_button.png');
         loadSprite('assets/buttons/reload_button.png');
         loadSprite('assets/buttons/attack_button.png');
         loadSprite('assets/buttons/move_button.png');
@@ -478,7 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
             button.innerHTML = `
                 <img class="option-art" src="${ability.art}" alt="">
                 <strong>${ability.name}</strong>
-                <small>${ability.mode === 'drag' ? 'Drag' : 'Tap'} · ${ability.detail}</small>
+                <small>${ability.mode === 'passive' ? 'Passive' : ability.mode === 'drag' ? 'Drag' : 'Tap'} · ${ability.detail}</small>
             `;
             button.addEventListener('click', () => {
                 builderStep = 'ability';
@@ -561,7 +585,7 @@ document.addEventListener('DOMContentLoaded', () => {
             builderCharacterStat.classList.add('hidden');
         } else {
             builderPreviewStats.textContent = ability.stat;
-            builderWeaponStat.textContent = `${Math.round(ability.cooldown)}s cooldown`;
+            builderWeaponStat.textContent = ability.mode === 'passive' ? 'Passive ability' : `${Math.round(ability.cooldown)}s cooldown`;
             builderWeaponStat.classList.remove('hidden');
             builderCharacterStat.classList.add('hidden');
         }
@@ -612,6 +636,8 @@ document.addEventListener('DOMContentLoaded', () => {
             aimAngle: id === 'local' ? 0 : Math.PI,
             hp: character.hp,
             maxHp: character.hp,
+            shield: 0,
+            maxShield: SHIELD_MAX,
             ammo: weapon.ammo,
             maxAmmo: weapon.ammo,
             reloadDuration: weapon.reloadDuration,
@@ -656,10 +682,14 @@ document.addEventListener('DOMContentLoaded', () => {
             entity.abilityCooldown = 0;
             entity.dashTimer = 0;
             entity.invisibleTimer = 0;
+            entity.shield = 0;
+            entity.maxShield = SHIELD_MAX;
             clearOneShot(entity);
         } else {
             entity.ammo = clamp(entity.ammo, 0, weapon.ammo);
             entity.abilityCooldown = clamp(entity.abilityCooldown, 0, entity.abilityCooldownMax);
+            entity.shield = clamp(entity.shield || 0, 0, SHIELD_MAX);
+            entity.maxShield = SHIELD_MAX;
         }
         loadSpritesForLoadout(normalized);
     }
@@ -783,6 +813,8 @@ document.addEventListener('DOMContentLoaded', () => {
             y: player.y,
             aimAngle: player.aimAngle,
             hp: player.hp,
+            shield: player.shield,
+            maxShield: player.maxShield,
             ammo: player.ammo,
             maxAmmo: player.maxAmmo,
             reloading: player.reloading,
@@ -919,9 +951,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (data.type === 'hit') {
-            remotePlayer.hp = typeof data.hp === 'number'
-                ? data.hp
-                : Math.max(0, remotePlayer.hp - (Number(data.damage) || 12));
+            if (typeof data.hp === 'number') {
+                remotePlayer.hp = data.hp;
+            } else {
+                applyDamage(remotePlayer, Number(data.damage) || 12);
+            }
+            remotePlayer.shield = typeof data.shield === 'number' ? clamp(data.shield, 0, SHIELD_MAX) : remotePlayer.shield;
             remotePlayer.invisibleTimer = typeof data.invisibleTimer === 'number' ? clamp(data.invisibleTimer, 0, INVIS_DURATION) : remotePlayer.invisibleTimer;
         }
     }
@@ -938,6 +973,8 @@ document.addEventListener('DOMContentLoaded', () => {
         remotePlayer.y = nextY;
         remotePlayer.targetAimAngle = nextAimAngle;
         remotePlayer.hp = typeof data.hp === 'number' ? data.hp : remotePlayer.hp;
+        remotePlayer.shield = typeof data.shield === 'number' ? clamp(data.shield, 0, SHIELD_MAX) : remotePlayer.shield;
+        remotePlayer.maxShield = typeof data.maxShield === 'number' ? clamp(data.maxShield, 0, SHIELD_MAX) : remotePlayer.maxShield;
         remotePlayer.ammo = typeof data.ammo === 'number' ? data.ammo : remotePlayer.ammo;
         remotePlayer.maxAmmo = typeof data.maxAmmo === 'number' ? data.maxAmmo : remotePlayer.maxAmmo;
         remotePlayer.reloading = Boolean(data.reloading);
@@ -1098,6 +1135,18 @@ document.addEventListener('DOMContentLoaded', () => {
         return player.aimAngle;
     }
 
+    function applyDamage(entity, amount) {
+        let remaining = Math.max(0, Number(amount) || 0);
+        if (entity.shield > 0) {
+            const absorbed = Math.min(entity.shield, remaining);
+            entity.shield = Math.max(0, entity.shield - absorbed);
+            remaining -= absorbed;
+        }
+        if (remaining > 0) {
+            entity.hp = Math.max(0, entity.hp - remaining);
+        }
+    }
+
     function activateDash() {
         if (player.hp <= 0 || player.abilityCooldown > 0 || player.dashTimer > 0) return;
         const angle = getDashAngle();
@@ -1142,6 +1191,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }));
     }
 
+    function activateShieldUp() {
+        if (!canUseAbility()) return;
+        player.shield = clamp((player.shield || 0) + SHIELD_UP_AMOUNT, 0, SHIELD_MAX);
+        player.maxShield = SHIELD_MAX;
+        player.abilityCooldown = SHIELD_UP_COOLDOWN;
+        player.abilityCooldownMax = SHIELD_UP_COOLDOWN;
+        updateHud();
+        sendData(playerSnapshot('ability', {
+            ability: 'shieldUp'
+        }));
+    }
+
     function canUseAbility() {
         return player.hp > 0
             && player.abilityCooldown <= 0
@@ -1164,6 +1225,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (ability.id === 'oneShot') {
             activateOneShot();
+            return;
+        }
+        if (ability.id === 'shieldUp') {
+            activateShieldUp();
+            return;
+        }
+        if (ability.mode === 'passive') {
             return;
         }
 
@@ -1308,6 +1376,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (fill) entity.ammo = weapon.ammo;
     }
 
+    function usesAutoReload(entity) {
+        return entity.loadout.ability === 'autoReload' && !entity.oneShotArmed && !entity.oneShotReloadPending;
+    }
+
+    function getActiveReloadDuration(entity) {
+        const weapon = getWeapon(entity.loadout.weapon);
+        return usesAutoReload(entity) ? weapon.reloadDuration / weapon.ammo : entity.reloadDuration;
+    }
+
     function clearOneShot(entity, fill = false) {
         entity.oneShotArmed = false;
         entity.oneShotReloadPending = false;
@@ -1331,6 +1408,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function tryManualReload() {
+        if (usesAutoReload(player)) return;
         if (!startReload(player)) return;
         updateHud();
         sendData(playerSnapshot());
@@ -1338,20 +1416,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateReload(entity, dt) {
         if (!entity.reloading) {
-            if (entity.ammo <= 0) startReload(entity);
+            if (entity.ammo <= 0 || (usesAutoReload(entity) && entity.ammo < entity.maxAmmo)) startReload(entity);
             return;
         }
 
         entity.reloadTimer += dt;
-        entity.reloadProgress = clamp(entity.reloadTimer / entity.reloadDuration, 0, 1);
+        entity.reloadProgress = clamp(entity.reloadTimer / getActiveReloadDuration(entity), 0, 1);
 
         if (entity.reloadProgress >= 1) {
-            entity.reloading = false;
             entity.reloadTimer = 0;
             entity.reloadProgress = 0;
             if (entity.oneShotReloadPending) {
+                entity.reloading = false;
                 finishOneShotReload(entity);
+            } else if (usesAutoReload(entity)) {
+                entity.ammo = Math.min(entity.maxAmmo, entity.ammo + 1);
+                entity.reloading = entity.ammo < entity.maxAmmo;
             } else {
+                entity.reloading = false;
                 entity.ammo = entity.maxAmmo;
             }
         }
@@ -1380,13 +1462,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateRemoteReload(entity, dt) {
         if (!entity.reloading) return;
-        entity.reloadProgress = clamp(entity.reloadProgress + dt / entity.reloadDuration, 0, 1);
+        entity.reloadProgress = clamp(entity.reloadProgress + dt / getActiveReloadDuration(entity), 0, 1);
         if (entity.reloadProgress >= 1) {
-            entity.reloading = false;
             entity.reloadProgress = 0;
             if (entity.oneShotReloadPending) {
+                entity.reloading = false;
                 finishOneShotReload(entity);
+            } else if (usesAutoReload(entity)) {
+                entity.ammo = Math.min(entity.maxAmmo, entity.ammo + 1);
+                entity.reloading = entity.ammo < entity.maxAmmo;
             } else {
+                entity.reloading = false;
                 entity.ammo = entity.maxAmmo;
             }
         }
@@ -1455,9 +1541,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (gameMode === 'pvp' && bullet.remote === true && distance(bullet, player) < bullet.r + player.r && player.invuln <= 0) {
-                player.hp = Math.max(0, player.hp - bullet.damage);
+                applyDamage(player, bullet.damage);
                 player.invisibleTimer = 0;
-                sendData({ type: 'hit', damage: bullet.damage, hp: player.hp, invisibleTimer: player.invisibleTimer });
+                sendData({ type: 'hit', damage: bullet.damage, hp: player.hp, shield: player.shield, invisibleTimer: player.invisibleTimer });
                 addImpact(bullet.x, bullet.y, colors.enemyBullet);
                 bullets.splice(i, 1);
                 if (player.hp <= 0) respawnPlayer(player);
@@ -1503,10 +1589,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (gameMode === 'pvp' && grenade.remote && player.invuln <= 0 && Math.hypot(player.x - grenade.endX, player.y - grenade.endY) <= grenade.radius + player.r) {
-            player.hp = Math.max(0, player.hp - grenade.damage);
+            applyDamage(player, grenade.damage);
             player.invisibleTimer = 0;
             player.invuln = 0.45;
-            sendData({ type: 'hit', damage: grenade.damage, hp: player.hp, invisibleTimer: player.invisibleTimer });
+            sendData({ type: 'hit', damage: grenade.damage, hp: player.hp, shield: player.shield, invisibleTimer: player.invisibleTimer });
             if (player.hp <= 0) respawnPlayer(player);
         }
     }
@@ -1527,7 +1613,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function fire(angle = player.aimAngle) {
-        if (player.cooldown > 0 || player.hp <= 0 || player.reloading) return;
+        if (player.cooldown > 0 || player.hp <= 0 || (player.reloading && !usesAutoReload(player))) return;
         if (player.ammo <= 0) {
             startReload(player);
             return;
@@ -1543,7 +1629,9 @@ document.addEventListener('DOMContentLoaded', () => {
             player.oneShotArmed = false;
             player.oneShotReloadPending = true;
         }
-        if (player.ammo === 0) {
+        if (usesAutoReload(player)) {
+            if (!player.reloading && player.ammo < player.maxAmmo) startReload(player);
+        } else if (player.ammo === 0) {
             startReload(player);
         }
 
@@ -1596,6 +1684,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function respawnPlayer(target) {
         clearOneShot(target, true);
         target.hp = target.maxHp;
+        target.shield = 0;
         target.invuln = 1.1;
         target.invisibleTimer = 0;
         target.x = networkRole === 'guest' ? world.width * 0.68 : world.width * 0.32;
@@ -1607,11 +1696,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateHud() {
         const healthPct = clamp(player.hp / player.maxHp, 0, 1);
         const ability = getAbility(player.loadout.ability);
-        healthLabel.textContent = Math.ceil(player.hp).toString();
+        const shield = Math.ceil(player.shield || 0);
+        healthLabel.textContent = shield > 0 ? `${Math.ceil(player.hp)}+${shield}` : Math.ceil(player.hp).toString();
         hudHealthFill.style.width = `${healthPct * 100}%`;
-        reloadBtn.disabled = player.ammo >= player.maxAmmo || player.reloading;
+        if (hudShieldFill) {
+            hudShieldFill.style.width = `${clamp((player.shield || 0) / player.maxShield, 0, 1) * 100}%`;
+        }
+        reloadBtn.disabled = usesAutoReload(player) || player.ammo >= player.maxAmmo || player.reloading;
         const abilityActive = ability.id === 'invis' && player.invisibleTimer > 0;
-        const abilityLocked = abilityActive || player.abilityCooldown > 0 || player.oneShotArmed || player.oneShotReloadPending;
+        const abilityPassive = ability.mode === 'passive';
+        const abilityLocked = abilityPassive || abilityActive || player.abilityCooldown > 0 || player.oneShotArmed || player.oneShotReloadPending;
         abilityBtn.disabled = abilityLocked || player.hp <= 0;
         abilityCooldown.textContent = abilityActive
             ? Math.ceil(player.invisibleTimer).toString()
@@ -1619,8 +1713,9 @@ document.addEventListener('DOMContentLoaded', () => {
             ? Math.ceil(player.abilityCooldown).toString()
             : '';
         abilityBtn.classList.toggle('active-timer', abilityActive);
+        abilityBtn.classList.toggle('passive', abilityPassive);
         abilityBtn.classList.toggle('drag-ready', ability.mode === 'drag' && !abilityLocked);
-        abilityBtn.setAttribute('aria-label', abilityLocked ? `${ability.name} unavailable` : ability.mode === 'drag' ? `${ability.name}. Drag to throw.` : ability.name);
+        abilityBtn.setAttribute('aria-label', abilityPassive ? `${ability.name} passive` : abilityLocked ? `${ability.name} unavailable` : ability.mode === 'drag' ? `${ability.name}. Drag to throw.` : ability.name);
     }
 
     function draw() {
@@ -1759,7 +1854,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         ctx.restore();
 
-        drawBar(drawX - 32, drawY - 48, 64, 8, entity.hp / entity.maxHp, '#ff3448');
+        drawHealthBar(drawX - 32, drawY - 48, 64, 8, entity);
         drawAmmoBar(drawX - 32, drawY - 36, 64, 7, entity);
     }
 
@@ -1890,16 +1985,28 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fill();
     }
 
+    function drawHealthBar(x, y, width, height, entity) {
+        if (entity.shield > 0) {
+            drawBar(x, y - height + 1, width, Math.max(5, height - 2), entity.shield / entity.maxShield, '#4db8ff');
+        }
+        drawBar(x, y, width, height, entity.hp / entity.maxHp, '#ff3448');
+    }
+
     function drawAmmoBar(x, y, width, height, entity) {
         ctx.save();
+        const segmentReload = usesAutoReload(entity);
 
         if (entity.reloading) {
             ctx.fillStyle = 'rgba(5, 7, 11, 0.72)';
             roundRect(ctx, x, y, width, height, height / 2);
             ctx.fill();
             ctx.fillStyle = '#ffc857';
-            roundRect(ctx, x, y, width * clamp(entity.reloadProgress, 0, 1), height, height / 2);
+            const fillPct = segmentReload
+                ? clamp((entity.ammo + entity.reloadProgress) / entity.maxAmmo, 0, 1)
+                : clamp(entity.reloadProgress, 0, 1);
+            roundRect(ctx, x, y, width * fillPct, height, height / 2);
             ctx.fill();
+            if (segmentReload) drawAmmoDividers(x, y, width, height, entity.maxAmmo);
             ctx.strokeStyle = 'rgba(255, 250, 240, 0.54)';
             ctx.lineWidth = 1.4;
             roundRect(ctx, x, y, width, height, height / 2);
@@ -2074,11 +2181,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     x: player.x,
                     y: player.y,
                     hp: player.hp,
+                    shield: player.shield,
                     aimAngle: player.aimAngle,
                     ammo: player.ammo,
                     maxAmmo: player.maxAmmo,
                     reloading: player.reloading,
                     reloadProgress: player.reloadProgress,
+                    reloadDuration: getActiveReloadDuration(player),
                     abilityCooldown: player.abilityCooldown,
                     dashTimer: player.dashTimer,
                     dashAngle: player.dashAngle,
@@ -2094,11 +2203,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     targetX: remotePlayer.x,
                     targetY: remotePlayer.y,
                     hp: remotePlayer.hp,
+                    shield: remotePlayer.shield,
                     aimAngle: remotePlayer.aimAngle,
                     ammo: remotePlayer.ammo,
                     maxAmmo: remotePlayer.maxAmmo,
                     reloading: remotePlayer.reloading,
                     reloadProgress: remotePlayer.reloadProgress,
+                    reloadDuration: getActiveReloadDuration(remotePlayer),
                     abilityCooldown: remotePlayer.abilityCooldown,
                     dashTimer: remotePlayer.dashTimer,
                     dashAngle: remotePlayer.dashAngle,

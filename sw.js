@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jungle-rumble-pwa-v26';
+const CACHE_NAME = 'jungle-rumble-pwa-v27';
 const CHARACTER_IDS = ['snake', 'croc', 'parrot'];
 const WEAPON_IDS = ['pistol', 'rifle', 'shotgun'];
 const TEAM_IDS = ['good', 'bad'];
@@ -25,6 +25,8 @@ const APP_SHELL = [
     './assets/buttons/grenade.png',
     './assets/buttons/Invis_button.png',
     './assets/buttons/OneShot_button.png',
+    './assets/buttons/autoreload_button.png',
+    './assets/buttons/shield_button.png',
     './assets/buttons/reload_button.png',
     './assets/buttons/attack_button.png',
     './assets/buttons/move_button.png',
