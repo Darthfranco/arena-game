@@ -1,4 +1,4 @@
-const APP_VERSION = '2026.07.14.4';
+const APP_VERSION = '2026.07.15.7';
 
 document.addEventListener('DOMContentLoaded', () => {
     setupServiceWorkerUpdates();
@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
         start: document.getElementById('start-screen'),
         build: document.getElementById('build-screen'),
         connect: document.getElementById('connection-screen'),
+        settings: document.getElementById('settings-screen'),
         game: document.getElementById('game-screen')
     };
     const installScreen = document.getElementById('install-screen');
@@ -16,6 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const buildBtn = document.getElementById('build-btn');
     const soloBtn = document.getElementById('solo-btn');
     const startConnectBtn = document.getElementById('start-connect-btn');
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsBackBtn = document.getElementById('settings-back-btn');
+    const musicToggleBtn = document.getElementById('music-toggle-btn');
+    const soundToggleBtn = document.getElementById('sound-toggle-btn');
+    const customizeLayoutBtn = document.getElementById('customize-layout-btn');
+    const redeemCodeInput = document.getElementById('redeem-code-input');
     const backBtn = document.getElementById('back-to-menu-btn');
     const backFromBuildBtn = document.getElementById('back-from-build-btn');
     const roomCodeInput = document.getElementById('room-code-input');
@@ -54,6 +61,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const labNextChoiceBtn = document.getElementById('lab-next-choice-btn');
     const builderStage = document.getElementById('builder-stage');
     const saveLoadoutBtn = document.getElementById('save-loadout-btn');
+    const builderTabButtons = document.querySelectorAll('[data-builder-step]');
+    const summaryCharacterArt = document.getElementById('summary-character-art');
+    const summaryWeaponArt = document.getElementById('summary-weapon-art');
+    const summaryAbilityArt = document.getElementById('summary-ability-art');
 
     const peerIdPrefix = 'roomtext-v1-';
     const world = { width: 1800, height: 1200 };
@@ -73,9 +84,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const GRENADE_RANGE = 410;
     const GRENADE_RADIUS = 118;
     const GRENADE_DAMAGE = 38;
+    const INVIS_DURATION = 2;
+    const INVIS_COOLDOWN = 5;
+    const ONE_SHOT_COOLDOWN = 12;
     const ABILITY_DRAG_VISUAL_RADIUS = 42;
     const LOADOUT_STORAGE_KEY = 'jungle-rumble-loadout-v1';
+    const SETTINGS_STORAGE_KEY = 'jungle-rumble-settings-v1';
     const DEFAULT_LOADOUT = { character: 'snake', weapon: 'pistol', ability: 'dash' };
+    const DEFAULT_SETTINGS = { music: true, sounds: true };
     const CHARACTERS = {
         snake: {
             id: 'snake',
@@ -170,6 +186,24 @@ document.addEventListener('DOMContentLoaded', () => {
             stat: 'Drag to arc throw',
             detail: 'Big area blast',
             art: 'assets/buttons/grenade.png'
+        },
+        invis: {
+            id: 'invis',
+            name: 'Invisibility',
+            mode: 'tap',
+            cooldown: INVIS_COOLDOWN,
+            stat: 'Vanish from enemies',
+            detail: '2s active · 5s cooldown',
+            art: 'assets/buttons/Invis_button.png'
+        },
+        oneShot: {
+            id: 'oneShot',
+            name: 'One Shot',
+            mode: 'tap',
+            cooldown: ONE_SHOT_COOLDOWN,
+            stat: 'Combines all ammo',
+            detail: '12s cooldown after reload',
+            art: 'assets/buttons/OneShot_button.png'
         }
     };
     const colors = {
@@ -207,6 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let score = 0;
     let selectedLoadout = normalizeLoadout(loadSavedLoadout());
     let draftLoadout = { ...selectedLoadout };
+    let menuSettings = loadSavedSettings();
     let builderStep = 'character';
     let builderSwipeStartX = 0;
     let builderSwipeStartY = 0;
@@ -253,6 +288,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function normalizeSettings(value) {
+        return {
+            music: value && typeof value.music === 'boolean' ? value.music : DEFAULT_SETTINGS.music,
+            sounds: value && typeof value.sounds === 'boolean' ? value.sounds : DEFAULT_SETTINGS.sounds
+        };
+    }
+
+    function loadSavedSettings() {
+        try {
+            return normalizeSettings(JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY)));
+        } catch {
+            return { ...DEFAULT_SETTINGS };
+        }
+    }
+
+    function saveMenuSettings() {
+        menuSettings = normalizeSettings(menuSettings);
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(menuSettings));
+        updateSettingsUI();
+    }
+
+    function updateSettingsUI() {
+        const settings = normalizeSettings(menuSettings);
+        musicToggleBtn.classList.toggle('is-checked', settings.music);
+        soundToggleBtn.classList.toggle('is-checked', settings.sounds);
+        musicToggleBtn.setAttribute('aria-pressed', settings.music ? 'true' : 'false');
+        soundToggleBtn.setAttribute('aria-pressed', settings.sounds ? 'true' : 'false');
+    }
+
+    function toggleMenuSetting(key) {
+        menuSettings = normalizeSettings(menuSettings);
+        menuSettings[key] = !menuSettings[key];
+        saveMenuSettings();
+    }
+
     function saveSelectedLoadout() {
         selectedLoadout = normalizeLoadout(draftLoadout);
         localStorage.setItem(LOADOUT_STORAGE_KEY, JSON.stringify(selectedLoadout));
@@ -295,6 +365,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         loadSprite('assets/buttons/dash.png');
         loadSprite('assets/buttons/grenade.png');
+        loadSprite('assets/buttons/Invis_button.png');
+        loadSprite('assets/buttons/OneShot_button.png');
         loadSprite('assets/buttons/reload_button.png');
         loadSprite('assets/buttons/attack_button.png');
         loadSprite('assets/buttons/move_button.png');
@@ -416,20 +488,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function updateSelectedOption(container, dataKey, selectedId) {
+        const buttons = Array.from(container.querySelectorAll('.option-card'));
+        buttons.forEach(button => {
+            const selected = button.dataset[dataKey] === selectedId;
+            button.classList.toggle('selected', selected);
+            button.classList.toggle('peek', !selected);
+            button.classList.toggle('is-window-hidden', !selected);
+            button.setAttribute('aria-selected', selected ? 'true' : 'false');
+        });
+    }
+
     function updateBuilderUI(animate = false) {
         draftLoadout = normalizeLoadout(draftLoadout);
-        characterOptions.querySelectorAll('.option-card').forEach(button => {
-            button.classList.toggle('selected', button.dataset.character === draftLoadout.character);
-            button.classList.toggle('peek', button.dataset.character !== draftLoadout.character);
-        });
-        weaponOptions.querySelectorAll('.option-card').forEach(button => {
-            button.classList.toggle('selected', button.dataset.weapon === draftLoadout.weapon);
-            button.classList.toggle('peek', button.dataset.weapon !== draftLoadout.weapon);
-        });
-        abilityOptions.querySelectorAll('.option-card').forEach(button => {
-            button.classList.toggle('selected', button.dataset.ability === draftLoadout.ability);
-            button.classList.toggle('peek', button.dataset.ability !== draftLoadout.ability);
-        });
+        updateSelectedOption(characterOptions, 'character', draftLoadout.character);
+        updateSelectedOption(weaponOptions, 'weapon', draftLoadout.weapon);
+        updateSelectedOption(abilityOptions, 'ability', draftLoadout.ability);
 
         const character = getCharacter(draftLoadout.character);
         const weapon = getWeapon(draftLoadout.weapon);
@@ -441,26 +515,56 @@ document.addEventListener('DOMContentLoaded', () => {
         characterOptions.classList.toggle('hidden', !onCharacterStep);
         weaponOptions.classList.toggle('hidden', !onWeaponStep);
         abilityOptions.classList.toggle('hidden', !onAbilityStep);
-        builderStepBackBtn.classList.toggle('hidden', onCharacterStep);
-        builderStepNextBtn.classList.toggle('hidden', onAbilityStep);
-        saveLoadoutBtn.classList.toggle('hidden', !onAbilityStep);
-        builderWeaponStat.classList.toggle('hidden', !onWeaponStep);
+        builderStepBackBtn.classList.add('hidden');
+        builderStepNextBtn.classList.add('hidden');
+        saveLoadoutBtn.classList.remove('hidden');
+        builderWeaponStat.classList.toggle('hidden', onCharacterStep);
         builderCharacterStat.classList.toggle('hidden', !onAbilityStep);
+        builderTabButtons.forEach(button => {
+            button.classList.toggle('is-active', button.dataset.builderStep === builderStep);
+            button.setAttribute('aria-pressed', button.dataset.builderStep === builderStep ? 'true' : 'false');
+        });
         builderStepEyebrow.textContent = onAbilityStep ? 'Step 3 of 3' : onWeaponStep ? 'Step 2 of 3' : 'Step 1 of 3';
         document.querySelectorAll('.garage-progress span').forEach((dot, index) => {
             dot.classList.toggle('active', index === (onAbilityStep ? 2 : onWeaponStep ? 1 : 0));
         });
         builderStepNextBtn.textContent = onWeaponStep ? 'Pick Ability' : 'Pick Weapon';
 
-        builderCharacterStat.textContent = abilityStatText(draftLoadout.ability);
+        builderCharacterStat.textContent = `${ability.detail}`;
         builderWeaponStat.textContent = weaponStatText(draftLoadout.weapon);
         builderComboArt.src = getComboSpritePath(draftLoadout, 'good');
-        builderPreviewLabel.textContent = onAbilityStep ? ability.name : onWeaponStep ? weapon.name : character.name;
-        builderPreviewStats.textContent = onAbilityStep
-            ? abilityStatText(draftLoadout.ability)
-            : onWeaponStep
-            ? `${weapon.rangeLabel} range · ${weapon.damageLabel} damage`
-            : characterStatText(draftLoadout.character);
+        summaryCharacterArt.src = character.face;
+        summaryWeaponArt.src = weapon.art;
+        summaryAbilityArt.src = ability.art;
+        builderPreviewLabel.textContent = onAbilityStep ? ability.name : onWeaponStep ? weapon.name : character.name.toLowerCase();
+        if (onCharacterStep) {
+            builderPreviewStats.innerHTML = `
+                <span class="character-stat-grid">
+                    <span>speed<br>${character.speedLabel.toLowerCase()}</span>
+                    <i aria-hidden="true"></i>
+                    <span>health<br><b>${character.hp}</b></span>
+                </span>
+            `;
+            builderWeaponStat.classList.add('hidden');
+            builderCharacterStat.classList.add('hidden');
+        } else if (onWeaponStep) {
+            builderPreviewStats.innerHTML = `
+                <span class="character-stat-grid weapon-stat-grid">
+                    <span>ammo<br>${weapon.ammo}</span>
+                    <i aria-hidden="true"></i>
+                    <span>attack speed<br>${weapon.rateLabel}</span>
+                    <i aria-hidden="true"></i>
+                    <span>damage<br>${weapon.damageLabel}</span>
+                </span>
+            `;
+            builderWeaponStat.classList.add('hidden');
+            builderCharacterStat.classList.add('hidden');
+        } else {
+            builderPreviewStats.textContent = ability.stat;
+            builderWeaponStat.textContent = `${Math.round(ability.cooldown)}s cooldown`;
+            builderWeaponStat.classList.remove('hidden');
+            builderCharacterStat.classList.add('hidden');
+        }
         if (animate) {
             builderComboArt.classList.remove('swap');
             requestAnimationFrame(() => {
@@ -520,6 +624,10 @@ document.addEventListener('DOMContentLoaded', () => {
             dashTimer: 0,
             dashDuration: DASH_DURATION,
             dashAngle: id === 'local' ? 0 : Math.PI,
+            invisibleTimer: 0,
+            invisibleDuration: INVIS_DURATION,
+            oneShotArmed: false,
+            oneShotReloadPending: false,
             invuln: 0,
             alive: true,
             targetAimAngle: id === 'local' ? 0 : Math.PI,
@@ -547,6 +655,8 @@ document.addEventListener('DOMContentLoaded', () => {
             entity.reloadProgress = 0;
             entity.abilityCooldown = 0;
             entity.dashTimer = 0;
+            entity.invisibleTimer = 0;
+            clearOneShot(entity);
         } else {
             entity.ammo = clamp(entity.ammo, 0, weapon.ammo);
             entity.abilityCooldown = clamp(entity.abilityCooldown, 0, entity.abilityCooldownMax);
@@ -666,6 +776,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function playerSnapshot(type = 'state', extra = {}) {
+        return {
+            type,
+            x: player.x,
+            y: player.y,
+            aimAngle: player.aimAngle,
+            hp: player.hp,
+            ammo: player.ammo,
+            maxAmmo: player.maxAmmo,
+            reloading: player.reloading,
+            reloadProgress: player.reloadProgress,
+            abilityCooldown: player.abilityCooldown,
+            dashTimer: player.dashTimer,
+            dashAngle: player.dashAngle,
+            invisibleTimer: player.invisibleTimer,
+            oneShotArmed: player.oneShotArmed,
+            oneShotReloadPending: player.oneShotReloadPending,
+            alive: player.alive,
+            loadout: player.loadout,
+            ...extra
+        };
+    }
+
     function initializeHost(roomCode) {
         cleanupPeer();
         setPlayerName();
@@ -726,22 +859,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const openGame = () => {
             startGame('pvp');
-            sendData({
-                type: 'hello',
+            sendData(playerSnapshot('hello', {
                 name: playerName,
-                x: player.x,
-                y: player.y,
-                color: player.color,
-                hp: player.hp,
-                ammo: player.ammo,
-                maxAmmo: player.maxAmmo,
-                reloading: player.reloading,
-                reloadProgress: player.reloadProgress,
-                abilityCooldown: player.abilityCooldown,
-                dashTimer: player.dashTimer,
-                dashAngle: player.dashAngle,
-                loadout: player.loadout
-            });
+                color: player.color
+            }));
         };
 
         if (connection.open) {
@@ -758,21 +879,7 @@ document.addEventListener('DOMContentLoaded', () => {
             opponentName = data.name || 'Opponent';
             remotePlayer.name = opponentName;
             applyRemoteSnapshot(data, true);
-            sendData({
-                type: 'hello-reply',
-                name: playerName,
-                x: player.x,
-                y: player.y,
-                hp: player.hp,
-                ammo: player.ammo,
-                maxAmmo: player.maxAmmo,
-                reloading: player.reloading,
-                reloadProgress: player.reloadProgress,
-                abilityCooldown: player.abilityCooldown,
-                dashTimer: player.dashTimer,
-                dashAngle: player.dashAngle,
-                loadout: player.loadout
-            });
+            sendData(playerSnapshot('hello-reply', { name: playerName }));
             showAlert(`${opponentName} joined.`);
             return;
         }
@@ -791,14 +898,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (data.type === 'shot') {
-            if (data.loadout) {
-                applyPlayerLoadout(remotePlayer, data.loadout, false);
-            }
-            remotePlayer.ammo = typeof data.ammo === 'number' ? data.ammo : remotePlayer.ammo;
-            remotePlayer.maxAmmo = typeof data.maxAmmo === 'number' ? data.maxAmmo : remotePlayer.maxAmmo;
-            remotePlayer.reloading = Boolean(data.reloading);
-            remotePlayer.reloadProgress = typeof data.reloadProgress === 'number' ? clamp(data.reloadProgress, 0, 1) : remotePlayer.reloadProgress;
-            spawnWeaponBullets(remotePlayer, Number(data.angle) || remotePlayer.aimAngle, true, data.id, data.angles);
+            applyRemoteSnapshot(data, false);
+            spawnWeaponBullets(remotePlayer, Number(data.angle) || remotePlayer.aimAngle, true, data.id, data.angles, finiteNumber(data.damageMultiplier, 1));
             return;
         }
 
@@ -821,6 +922,7 @@ document.addEventListener('DOMContentLoaded', () => {
             remotePlayer.hp = typeof data.hp === 'number'
                 ? data.hp
                 : Math.max(0, remotePlayer.hp - (Number(data.damage) || 12));
+            remotePlayer.invisibleTimer = typeof data.invisibleTimer === 'number' ? clamp(data.invisibleTimer, 0, INVIS_DURATION) : remotePlayer.invisibleTimer;
         }
     }
 
@@ -843,6 +945,9 @@ document.addEventListener('DOMContentLoaded', () => {
         remotePlayer.abilityCooldown = typeof data.abilityCooldown === 'number' ? clamp(data.abilityCooldown, 0, getAbility(remotePlayer.loadout.ability).cooldown) : remotePlayer.abilityCooldown;
         remotePlayer.dashTimer = typeof data.dashTimer === 'number' ? clamp(data.dashTimer, 0, DASH_DURATION) : remotePlayer.dashTimer;
         remotePlayer.dashAngle = typeof data.dashAngle === 'number' ? data.dashAngle : remotePlayer.dashAngle;
+        remotePlayer.invisibleTimer = typeof data.invisibleTimer === 'number' ? clamp(data.invisibleTimer, 0, INVIS_DURATION) : remotePlayer.invisibleTimer;
+        remotePlayer.oneShotArmed = data.oneShotArmed === true;
+        remotePlayer.oneShotReloadPending = data.oneShotReloadPending === true;
         remotePlayer.alive = data.alive !== false;
         remotePlayer.lastSeen = performance.now();
 
@@ -938,22 +1043,7 @@ document.addEventListener('DOMContentLoaded', () => {
         player.visualY = player.y;
 
         if (gameMode === 'pvp' && now - lastNetworkSend > NETWORK_SEND_INTERVAL_MS) {
-            sendData({
-                type: 'state',
-                x: player.x,
-                y: player.y,
-                aimAngle: player.aimAngle,
-                hp: player.hp,
-                ammo: player.ammo,
-                maxAmmo: player.maxAmmo,
-                reloading: player.reloading,
-                reloadProgress: player.reloadProgress,
-                abilityCooldown: player.abilityCooldown,
-                dashTimer: player.dashTimer,
-                dashAngle: player.dashAngle,
-                alive: player.alive,
-                loadout: player.loadout
-            });
+            sendData(playerSnapshot());
             lastNetworkSend = now;
         }
     }
@@ -995,6 +1085,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateAbilityTimers(entity, dt) {
         entity.abilityCooldown = Math.max(0, entity.abilityCooldown - dt);
         entity.dashTimer = Math.max(0, entity.dashTimer - dt);
+        entity.invisibleTimer = Math.max(0, entity.invisibleTimer - dt);
     }
 
     function getDashAngle() {
@@ -1017,27 +1108,47 @@ document.addEventListener('DOMContentLoaded', () => {
         player.abilityCooldownMax = DASH_COOLDOWN;
         player.aimAngle = angle;
         updateHud();
-        sendData({
-            type: 'ability',
+        sendData(playerSnapshot('ability', {
             ability: 'dash',
-            x: player.x,
-            y: player.y,
-            aimAngle: player.aimAngle,
-            hp: player.hp,
-            ammo: player.ammo,
-            maxAmmo: player.maxAmmo,
-            reloading: player.reloading,
-            reloadProgress: player.reloadProgress,
-            abilityCooldown: player.abilityCooldown,
-            dashTimer: player.dashTimer,
-            dashAngle: player.dashAngle,
-            alive: player.alive,
-            loadout: player.loadout
-        });
+        }));
+    }
+
+    function activateInvisibility() {
+        if (!canUseAbility()) return;
+        player.invisibleTimer = INVIS_DURATION;
+        player.invisibleDuration = INVIS_DURATION;
+        player.abilityCooldown = INVIS_COOLDOWN;
+        player.abilityCooldownMax = INVIS_COOLDOWN;
+        updateHud();
+        sendData(playerSnapshot('ability', {
+            ability: 'invis'
+        }));
+    }
+
+    function activateOneShot() {
+        if (!canUseAbility() || player.oneShotArmed || player.oneShotReloadPending) return;
+        player.oneShotArmed = true;
+        player.oneShotReloadPending = false;
+        player.maxAmmo = 1;
+        player.ammo = 1;
+        player.reloading = false;
+        player.reloadTimer = 0;
+        player.reloadProgress = 0;
+        player.abilityCooldown = 0;
+        player.abilityCooldownMax = ONE_SHOT_COOLDOWN;
+        updateHud();
+        sendData(playerSnapshot('ability', {
+            ability: 'oneShot'
+        }));
     }
 
     function canUseAbility() {
-        return player.hp > 0 && player.abilityCooldown <= 0 && player.dashTimer <= 0;
+        return player.hp > 0
+            && player.abilityCooldown <= 0
+            && player.dashTimer <= 0
+            && player.invisibleTimer <= 0
+            && !player.oneShotArmed
+            && !player.oneShotReloadPending;
     }
 
     function beginAbilityDrag(event) {
@@ -1045,6 +1156,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const ability = getAbility(player.loadout.ability);
         if (ability.id === 'dash') {
             activateDash();
+            return;
+        }
+        if (ability.id === 'invis') {
+            activateInvisibility();
+            return;
+        }
+        if (ability.id === 'oneShot') {
+            activateOneShot();
             return;
         }
 
@@ -1136,26 +1255,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
         spawnGrenade(player.x, player.y, target.x, target.y, false, id);
         updateHud();
-        sendData({
-            type: 'ability',
+        sendData(playerSnapshot('ability', {
             ability: 'grenade',
             id,
-            x: player.x,
-            y: player.y,
-            aimAngle: player.aimAngle,
             targetX: target.x,
-            targetY: target.y,
-            hp: player.hp,
-            ammo: player.ammo,
-            maxAmmo: player.maxAmmo,
-            reloading: player.reloading,
-            reloadProgress: player.reloadProgress,
-            abilityCooldown: player.abilityCooldown,
-            dashTimer: player.dashTimer,
-            dashAngle: player.dashAngle,
-            alive: player.alive,
-            loadout: player.loadout
-        });
+            targetY: target.y
+        }));
     }
 
     function spawnGrenade(startX, startY, targetX, targetY, remote = false, id = '') {
@@ -1196,6 +1301,27 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    function restoreWeaponAmmo(entity, fill = true) {
+        const weapon = getWeapon(entity.loadout.weapon);
+        entity.maxAmmo = weapon.ammo;
+        entity.reloadDuration = weapon.reloadDuration;
+        if (fill) entity.ammo = weapon.ammo;
+    }
+
+    function clearOneShot(entity, fill = false) {
+        entity.oneShotArmed = false;
+        entity.oneShotReloadPending = false;
+        restoreWeaponAmmo(entity, fill);
+    }
+
+    function finishOneShotReload(entity) {
+        clearOneShot(entity, true);
+        if (entity.loadout.ability === 'oneShot') {
+            entity.abilityCooldown = ONE_SHOT_COOLDOWN;
+            entity.abilityCooldownMax = ONE_SHOT_COOLDOWN;
+        }
+    }
+
     function startReload(entity) {
         if (entity.reloading || entity.ammo >= entity.maxAmmo) return false;
         entity.reloading = true;
@@ -1207,22 +1333,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function tryManualReload() {
         if (!startReload(player)) return;
         updateHud();
-        sendData({
-            type: 'state',
-            x: player.x,
-            y: player.y,
-            aimAngle: player.aimAngle,
-            hp: player.hp,
-            ammo: player.ammo,
-            maxAmmo: player.maxAmmo,
-            reloading: player.reloading,
-            reloadProgress: player.reloadProgress,
-            abilityCooldown: player.abilityCooldown,
-            dashTimer: player.dashTimer,
-            dashAngle: player.dashAngle,
-            alive: player.alive,
-            loadout: player.loadout
-        });
+        sendData(playerSnapshot());
     }
 
     function updateReload(entity, dt) {
@@ -1235,10 +1346,14 @@ document.addEventListener('DOMContentLoaded', () => {
         entity.reloadProgress = clamp(entity.reloadTimer / entity.reloadDuration, 0, 1);
 
         if (entity.reloadProgress >= 1) {
-            entity.ammo = entity.maxAmmo;
             entity.reloading = false;
             entity.reloadTimer = 0;
             entity.reloadProgress = 0;
+            if (entity.oneShotReloadPending) {
+                finishOneShotReload(entity);
+            } else {
+                entity.ammo = entity.maxAmmo;
+            }
         }
     }
 
@@ -1267,9 +1382,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!entity.reloading) return;
         entity.reloadProgress = clamp(entity.reloadProgress + dt / entity.reloadDuration, 0, 1);
         if (entity.reloadProgress >= 1) {
-            entity.ammo = entity.maxAmmo;
             entity.reloading = false;
             entity.reloadProgress = 0;
+            if (entity.oneShotReloadPending) {
+                finishOneShotReload(entity);
+            } else {
+                entity.ammo = entity.maxAmmo;
+            }
         }
     }
 
@@ -1337,8 +1456,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (gameMode === 'pvp' && bullet.remote === true && distance(bullet, player) < bullet.r + player.r && player.invuln <= 0) {
                 player.hp = Math.max(0, player.hp - bullet.damage);
-                player.invuln = 0.45;
-                sendData({ type: 'hit', damage: bullet.damage, hp: player.hp });
+                player.invisibleTimer = 0;
+                sendData({ type: 'hit', damage: bullet.damage, hp: player.hp, invisibleTimer: player.invisibleTimer });
                 addImpact(bullet.x, bullet.y, colors.enemyBullet);
                 bullets.splice(i, 1);
                 if (player.hp <= 0) respawnPlayer(player);
@@ -1385,8 +1504,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (gameMode === 'pvp' && grenade.remote && player.invuln <= 0 && Math.hypot(player.x - grenade.endX, player.y - grenade.endY) <= grenade.radius + player.r) {
             player.hp = Math.max(0, player.hp - grenade.damage);
+            player.invisibleTimer = 0;
             player.invuln = 0.45;
-            sendData({ type: 'hit', damage: grenade.damage, hp: player.hp });
+            sendData({ type: 'hit', damage: grenade.damage, hp: player.hp, invisibleTimer: player.invisibleTimer });
             if (player.hp <= 0) respawnPlayer(player);
         }
     }
@@ -1414,27 +1534,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const weapon = getWeapon(player.loadout.weapon);
+        const damageMultiplier = player.oneShotArmed ? weapon.ammo : 1;
         const angles = getShotAngles(angle, weapon);
         player.aimAngle = angle;
         player.cooldown = weapon.cooldown;
         player.ammo = Math.max(0, player.ammo - 1);
+        if (player.oneShotArmed) {
+            player.oneShotArmed = false;
+            player.oneShotReloadPending = true;
+        }
         if (player.ammo === 0) {
             startReload(player);
         }
 
         const shotId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-        spawnWeaponBullets(player, angle, false, shotId, angles);
-        sendData({
-            type: 'shot',
+        spawnWeaponBullets(player, angle, false, shotId, angles, damageMultiplier);
+        sendData(playerSnapshot('shot', {
             angle,
             angles,
             id: shotId,
-            ammo: player.ammo,
-            maxAmmo: player.maxAmmo,
-            reloading: player.reloading,
-            reloadProgress: player.reloadProgress,
-            loadout: player.loadout
-        });
+            damageMultiplier
+        }));
     }
 
     function getShotAngles(angle, weapon) {
@@ -1444,15 +1564,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return Array.from({ length: weapon.pellets }, (_, index) => angle + start + step * index);
     }
 
-    function spawnWeaponBullets(owner, angle, remote = false, id = '', angles = null) {
+    function spawnWeaponBullets(owner, angle, remote = false, id = '', angles = null, damageMultiplier = 1) {
         const weapon = getWeapon(owner.loadout.weapon);
         const shotAngles = Array.isArray(angles) && angles.length ? angles.map(value => finiteNumber(value, angle)) : getShotAngles(angle, weapon);
         shotAngles.forEach((shotAngle, index) => {
-            spawnBullet(owner, shotAngle, remote, `${id}-${index}`, weapon);
+            spawnBullet(owner, shotAngle, remote, `${id}-${index}`, weapon, damageMultiplier);
         });
     }
 
-    function spawnBullet(owner, angle, remote = false, id = '', weapon = getWeapon(owner.loadout.weapon)) {
+    function spawnBullet(owner, angle, remote = false, id = '', weapon = getWeapon(owner.loadout.weapon), damageMultiplier = 1) {
         const muzzle = owner.r + 15;
         const speed = weapon.bulletSpeed;
         const originX = remote ? owner.visualX : owner.x;
@@ -1466,7 +1586,7 @@ document.addEventListener('DOMContentLoaded', () => {
             angle,
             r: 7,
             life: weapon.bulletLife,
-            damage: weapon.damage,
+            damage: weapon.damage * Math.max(1, damageMultiplier),
             weapon: weapon.id,
             remote,
             color: remote ? colors.enemyBullet : colors.bullet
@@ -1474,8 +1594,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function respawnPlayer(target) {
+        clearOneShot(target, true);
         target.hp = target.maxHp;
         target.invuln = 1.1;
+        target.invisibleTimer = 0;
         target.x = networkRole === 'guest' ? world.width * 0.68 : world.width * 0.32;
         target.y = world.height * 0.5;
         target.visualX = target.x;
@@ -1488,11 +1610,17 @@ document.addEventListener('DOMContentLoaded', () => {
         healthLabel.textContent = Math.ceil(player.hp).toString();
         hudHealthFill.style.width = `${healthPct * 100}%`;
         reloadBtn.disabled = player.ammo >= player.maxAmmo || player.reloading;
-        const abilityOnCooldown = player.abilityCooldown > 0;
-        abilityBtn.disabled = abilityOnCooldown || player.hp <= 0;
-        abilityCooldown.textContent = abilityOnCooldown ? Math.ceil(player.abilityCooldown).toString() : '';
-        abilityBtn.classList.toggle('drag-ready', ability.mode === 'drag' && !abilityOnCooldown);
-        abilityBtn.setAttribute('aria-label', abilityOnCooldown ? `${ability.name} cooling down ${Math.ceil(player.abilityCooldown)}` : ability.mode === 'drag' ? `${ability.name}. Drag to throw.` : ability.name);
+        const abilityActive = ability.id === 'invis' && player.invisibleTimer > 0;
+        const abilityLocked = abilityActive || player.abilityCooldown > 0 || player.oneShotArmed || player.oneShotReloadPending;
+        abilityBtn.disabled = abilityLocked || player.hp <= 0;
+        abilityCooldown.textContent = abilityActive
+            ? Math.ceil(player.invisibleTimer).toString()
+            : player.abilityCooldown > 0
+            ? Math.ceil(player.abilityCooldown).toString()
+            : '';
+        abilityBtn.classList.toggle('active-timer', abilityActive);
+        abilityBtn.classList.toggle('drag-ready', ability.mode === 'drag' && !abilityLocked);
+        abilityBtn.setAttribute('aria-label', abilityLocked ? `${ability.name} unavailable` : ability.mode === 'drag' ? `${ability.name}. Drag to throw.` : ability.name);
     }
 
     function draw() {
@@ -1597,6 +1725,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function drawPlayer(entity, isRemote) {
         if (isRemote && gameMode !== 'pvp') return;
         if (entity.hp <= 0) return;
+        if (isRemote && entity.invisibleTimer > 0) return;
         const flicker = entity.invuln > 0 && Math.floor(entity.invuln * 18) % 2 === 0;
         if (flicker) return;
 
@@ -1605,6 +1734,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const drawY = isRemote ? entity.visualY : entity.y;
         ctx.translate(drawX, drawY);
         ctx.rotate(entity.aimAngle - Math.PI / 2);
+        if (!isRemote && entity.invisibleTimer > 0) {
+            ctx.globalAlpha = 0.38;
+        }
 
         const sprite = loadSprite(getPlayerSpritePath(entity, isRemote ? 'bad' : 'good'));
         if (spriteReady(sprite)) {
@@ -1950,6 +2082,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     abilityCooldown: player.abilityCooldown,
                     dashTimer: player.dashTimer,
                     dashAngle: player.dashAngle,
+                    invisibleTimer: player.invisibleTimer,
+                    oneShotArmed: player.oneShotArmed,
+                    oneShotReloadPending: player.oneShotReloadPending,
                     ability: player.loadout.ability,
                     loadout: player.loadout
                 },
@@ -1967,6 +2102,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     abilityCooldown: remotePlayer.abilityCooldown,
                     dashTimer: remotePlayer.dashTimer,
                     dashAngle: remotePlayer.dashAngle,
+                    invisibleTimer: remotePlayer.invisibleTimer,
+                    oneShotArmed: remotePlayer.oneShotArmed,
+                    oneShotReloadPending: remotePlayer.oneShotReloadPending,
                     ability: remotePlayer.loadout.ability,
                     loadout: remotePlayer.loadout
                 },
@@ -2005,6 +2143,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     saveLoadoutBtn.addEventListener('click', saveSelectedLoadout);
+    builderTabButtons.forEach(button => {
+        button.addEventListener('click', () => setBuilderStep(button.dataset.builderStep));
+    });
     builderStepBackBtn.addEventListener('click', () => {
         setBuilderStep(builderStep === 'ability' ? 'weapon' : 'character');
     });
@@ -2045,6 +2186,35 @@ document.addEventListener('DOMContentLoaded', () => {
         setPlayerName();
         showScreen('connect');
         roomCodeInput.focus();
+    });
+
+    settingsBtn.addEventListener('click', () => {
+        setPlayerName();
+        updateSettingsUI();
+        showScreen('settings');
+        settingsBackBtn.focus({ preventScroll: true });
+    });
+
+    settingsBackBtn.addEventListener('click', () => {
+        showScreen('start');
+    });
+
+    musicToggleBtn.addEventListener('click', () => toggleMenuSetting('music'));
+    soundToggleBtn.addEventListener('click', () => toggleMenuSetting('sounds'));
+
+    customizeLayoutBtn.addEventListener('click', () => {
+        showAlert('Control layout editor coming soon.');
+    });
+
+    redeemCodeInput.addEventListener('input', () => {
+        redeemCodeInput.value = redeemCodeInput.value.replace(/[^a-z0-9-]/gi, '').toUpperCase().slice(0, 16);
+    });
+
+    redeemCodeInput.addEventListener('keydown', event => {
+        if (event.key !== 'Enter') return;
+        const code = redeemCodeInput.value.trim();
+        showAlert(code ? `Code ${code} saved for later.` : 'Enter a code first.');
+        redeemCodeInput.blur();
     });
 
     backBtn.addEventListener('click', () => {
@@ -2145,6 +2315,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderBuilderOptions();
     updateLoadoutUI();
     updateBuilderUI();
+    updateSettingsUI();
     showScreen('start');
     updateAccessGates();
 });

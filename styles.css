@@ -147,6 +147,247 @@ button {
     height: 100%;
 }
 
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+}
+
+.art-menu-screen {
+    display: grid;
+    place-items: center;
+    padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    overflow: hidden;
+    background:
+        linear-gradient(rgba(4, 18, 10, 0.08), rgba(4, 18, 10, 0.26)),
+        #092011 url("assets/menu/jungle-rumble-menu-backdrop.png?v=2026.07.15.7") center / cover no-repeat;
+}
+
+.art-menu-frame {
+    --menu-aspect: 2.097;
+    position: relative;
+    width: min(calc(100dvw - 16px), calc((100dvh - 16px) * var(--menu-aspect)));
+    aspect-ratio: var(--menu-aspect);
+    overflow: hidden;
+    border-radius: clamp(5px, 0.9vw, 14px);
+    background: #0b2615;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.42);
+}
+
+.settings-menu-frame {
+    --menu-aspect: 1.777;
+}
+
+.menu-art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.menu-character-preview {
+    position: absolute;
+    left: 14.7%;
+    top: 49.4%;
+    width: 17.2%;
+    height: 37.4%;
+    object-fit: contain;
+    object-position: center bottom;
+    filter: drop-shadow(0 2.2vh 1.5vh rgba(0, 0, 0, 0.32));
+    transform-origin: center bottom;
+    animation: menuPreviewFloat 2.8s ease-in-out infinite;
+    pointer-events: none;
+}
+
+.menu-name-input,
+.redeem-code-input {
+    position: absolute;
+    z-index: 2;
+    border: 0;
+    outline: 0;
+    background: rgba(42, 7, 5, 0.08);
+    color: #fff6df;
+    text-align: center;
+    font-weight: 950;
+    letter-spacing: 0;
+    text-shadow: 0 3px 0 rgba(23, 5, 3, 0.72);
+}
+
+.menu-name-input {
+    left: 69.4%;
+    top: 61.4%;
+    width: 15.7%;
+    height: 12.3%;
+    border-radius: 1.6vw;
+    font-size: clamp(0.82rem, 2.2vw, 1.65rem);
+}
+
+.menu-name-input::placeholder {
+    color: rgba(255, 246, 223, 0.54);
+}
+
+.redeem-code-input {
+    left: 31.4%;
+    top: 80.5%;
+    width: 37.7%;
+    height: 7.2%;
+    border-radius: 1vw;
+    background: rgba(6, 23, 28, 0.14);
+    font-size: clamp(0.78rem, 2vw, 1.45rem);
+    text-transform: uppercase;
+}
+
+.redeem-code-input::placeholder {
+    color: rgba(255, 246, 223, 0.42);
+}
+
+.menu-hotspot,
+.settings-toggle,
+.settings-wide-hotspot {
+    position: absolute;
+    z-index: 3;
+    border: 0;
+    border-radius: 14px;
+    background: transparent;
+    color: #fff6df;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background-color 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease;
+}
+
+.menu-hotspot:hover,
+.settings-wide-hotspot:hover {
+    background: rgba(255, 255, 255, 0.045);
+    box-shadow: inset 0 0 0 3px rgba(255, 249, 214, 0.16);
+}
+
+.menu-hotspot:active,
+.settings-wide-hotspot:active,
+.settings-toggle:active,
+.settings-back-btn:active {
+    transform: translateY(2px) scale(0.99);
+}
+
+.menu-hotspot:focus-visible,
+.settings-toggle:focus-visible,
+.settings-wide-hotspot:focus-visible,
+.settings-back-btn:focus-visible,
+.menu-name-input:focus-visible,
+.redeem-code-input:focus-visible {
+    box-shadow: 0 0 0 4px rgba(255, 247, 167, 0.72), 0 0 24px rgba(255, 214, 77, 0.4);
+}
+
+.menu-hotspot-solo {
+    left: 38%;
+    top: 41.4%;
+    width: 25.3%;
+    height: 11.5%;
+}
+
+.menu-hotspot-pvp {
+    left: 38%;
+    top: 54.3%;
+    width: 25.3%;
+    height: 11.4%;
+}
+
+.menu-hotspot-build {
+    left: 38%;
+    top: 67.1%;
+    width: 25.3%;
+    height: 11.3%;
+}
+
+.menu-hotspot-settings {
+    left: 38%;
+    top: 80.3%;
+    width: 25.3%;
+    height: 11.4%;
+}
+
+.settings-back-btn {
+    position: absolute;
+    z-index: 4;
+    left: 3%;
+    top: 3.2%;
+    width: clamp(38px, 5.2vw, 76px);
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border: 3px solid #08230f;
+    border-radius: 50%;
+    background: linear-gradient(#daf267, #7db72b);
+    color: #173710;
+    cursor: pointer;
+    font-size: clamp(2rem, 4.7vw, 4.4rem);
+    font-weight: 950;
+    line-height: 0.72;
+    box-shadow: 0 0.7vw 0 rgba(0, 0, 0, 0.3), inset 0 -0.35vw 0 rgba(35, 78, 16, 0.34);
+}
+
+.settings-toggle {
+    width: 5.3%;
+    height: 8.6%;
+    border-radius: 0.9vw;
+}
+
+.settings-toggle::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 46%;
+    width: 42%;
+    height: 72%;
+    border-right: 0.55vw solid #d8f55d;
+    border-bottom: 0.55vw solid #d8f55d;
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(42deg) scale(0.72);
+    filter: drop-shadow(0 0.18vw 0 #07180d) drop-shadow(0 0 0.5vw rgba(216, 245, 93, 0.52));
+    transition: opacity 0.14s ease, transform 0.14s ease;
+}
+
+.settings-toggle.is-checked::after {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(42deg) scale(1);
+}
+
+.settings-toggle:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.settings-toggle-music {
+    left: 60.5%;
+    top: 29.1%;
+}
+
+.settings-toggle-sounds {
+    left: 60.5%;
+    top: 43.8%;
+}
+
+.settings-customize-layout {
+    left: 24.2%;
+    top: 57%;
+    width: 51.4%;
+    height: 13.1%;
+    border-radius: 1.5vw;
+}
+
+@keyframes menuPreviewFloat {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+    }
+    50% {
+        transform: translateY(-1.1%) scale(1.015);
+    }
+}
+
 .menu-screen {
     display: flex;
     flex-direction: column;
@@ -329,6 +570,286 @@ h2 {
     max-height: 128px;
     object-fit: contain;
     filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.28));
+}
+
+.chooser-screen {
+    background:
+        linear-gradient(rgba(4, 18, 10, 0.08), rgba(4, 18, 10, 0.26)),
+        #092011 url("assets/menu/jungle-rumble-menu-backdrop.png?v=2026.07.15.7") center / cover no-repeat;
+}
+
+.chooser-menu-frame {
+    --menu-aspect: 1.777;
+}
+
+.chooser-tab,
+.chooser-arrow,
+.chooser-save {
+    position: absolute;
+    z-index: 4;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background-color 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease;
+}
+
+.chooser-tab {
+    left: 1.6%;
+    width: 25.3%;
+    height: 10.8%;
+    border-radius: 999px 18px 18px 999px;
+}
+
+.chooser-tab-character {
+    top: 3.2%;
+}
+
+.chooser-tab-weapon {
+    top: 15.6%;
+}
+
+.chooser-tab-ability {
+    top: 27.1%;
+}
+
+.chooser-tab.is-active,
+.chooser-tab:hover,
+.chooser-arrow:hover,
+.chooser-save:hover {
+    background: rgba(255, 239, 133, 0.08);
+    box-shadow: inset 0 0 0 3px rgba(255, 237, 114, 0.2);
+}
+
+.chooser-tab:active,
+.chooser-arrow:active,
+.chooser-save:active {
+    transform: translateY(2px) scale(0.99);
+}
+
+.chooser-tab:focus-visible,
+.chooser-arrow:focus-visible,
+.chooser-save:focus-visible,
+.option-card:focus-visible {
+    outline: 0;
+    box-shadow: 0 0 0 4px rgba(255, 247, 167, 0.72), 0 0 24px rgba(255, 214, 77, 0.4);
+}
+
+.chooser-arrow {
+    top: 32.4%;
+    width: 9.8%;
+    height: 19%;
+    border-radius: 26px;
+}
+
+.chooser-arrow-prev {
+    left: 23.5%;
+}
+
+.chooser-arrow-next {
+    left: 77.8%;
+}
+
+.chooser-stage {
+    position: absolute;
+    z-index: 2;
+    left: 30.9%;
+    top: 14.8%;
+    width: 43.8%;
+    height: 41.8%;
+    display: grid;
+    place-items: center;
+    overflow: visible;
+    touch-action: pan-y;
+}
+
+.chooser-options {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    place-items: center;
+}
+
+.chooser-options.character-picker,
+.chooser-options.weapon-picker,
+.chooser-options.ability-picker {
+    grid-template-columns: 1fr;
+}
+
+.chooser-options.hidden {
+    display: none !important;
+}
+
+.chooser-options .option-card {
+    width: min(52%, 260px);
+    height: min(86%, 260px);
+    min-height: 0;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: none;
+    cursor: pointer;
+    transition: opacity 0.16s ease, filter 0.16s ease, transform 0.16s ease;
+}
+
+.chooser-options .option-card.is-window-hidden {
+    display: none;
+}
+
+.chooser-options .option-card strong,
+.chooser-options .option-card small {
+    display: none;
+}
+
+.chooser-options .option-art {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 11px 12px rgba(0, 0, 0, 0.26));
+    pointer-events: none;
+}
+
+.character-picker .option-card.selected {
+    opacity: 1;
+    filter: none;
+    transform: scale(1.18);
+}
+
+.weapon-picker .option-card,
+.ability-picker .option-card {
+    width: min(68%, 340px);
+    height: min(94%, 340px);
+    background: #fff4d6;
+    box-shadow: inset 0 0 0 4px #38d093, 0 10px 16px rgba(0, 0, 0, 0.3);
+    transform: scale(1.12);
+}
+
+.weapon-picker .option-card.selected,
+.ability-picker .option-card.selected {
+    transform: scale(1.18);
+}
+
+.weapon-picker .option-art,
+.ability-picker .option-art {
+    width: 86%;
+    height: 86%;
+}
+
+.chooser-detail {
+    position: absolute;
+    z-index: 3;
+    left: 28.7%;
+    top: 63.4%;
+    width: 43.7%;
+    height: 27%;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 1%;
+    padding: 1.5% 3%;
+    color: #fffaf0;
+    text-align: center;
+    pointer-events: none;
+}
+
+.chooser-detail > span {
+    color: #fff200;
+    font-size: clamp(1.3rem, 4.6vw, 3.45rem);
+    font-weight: 950;
+    line-height: 0.9;
+    -webkit-text-stroke: 0.045em rgba(7, 23, 14, 0.72);
+    text-shadow:
+        0 0.08em 0 rgba(0, 0, 0, 0.58),
+        0 0.12em 0.12em rgba(0, 0, 0, 0.35);
+}
+
+.chooser-detail strong {
+    width: 100%;
+    color: #fffaf0;
+    font-size: clamp(0.78rem, 2.2vw, 1.64rem);
+    font-weight: 900;
+    line-height: 1.02;
+    -webkit-text-stroke: 0.035em rgba(7, 23, 14, 0.58);
+    text-shadow: 0 0.09em 0 rgba(0, 0, 0, 0.46);
+}
+
+.chooser-detail small {
+    color: #fffaf0;
+    font-size: clamp(0.68rem, 1.8vw, 1.26rem);
+    font-weight: 850;
+    line-height: 1.08;
+    -webkit-text-stroke: 0.03em rgba(7, 23, 14, 0.48);
+    text-shadow: 0 0.08em 0 rgba(0, 0, 0, 0.42);
+}
+
+.character-stat-grid {
+    width: min(100%, 520px);
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 4%;
+}
+
+.weapon-stat-grid {
+    grid-template-columns: 0.78fr auto 1.22fr auto 0.92fr;
+    gap: 2.8%;
+}
+
+.character-stat-grid b {
+    color: #ff3f31;
+    font-weight: 950;
+    -webkit-text-stroke: 0.035em rgba(7, 23, 14, 0.58);
+}
+
+.character-stat-grid i {
+    width: 1px;
+    height: 2.9em;
+    background: rgba(238, 234, 101, 0.65);
+}
+
+.chooser-summary {
+    position: absolute;
+    z-index: 3;
+    left: 76%;
+    top: 69.2%;
+    width: 16.8%;
+    height: 16.2%;
+    display: grid;
+    align-content: center;
+    gap: 4%;
+    color: #fffaf0;
+    font-size: clamp(0.55rem, 1.48vw, 0.96rem);
+    font-weight: 850;
+    line-height: 1;
+    -webkit-text-stroke: 0.025em rgba(7, 23, 14, 0.44);
+    text-shadow: 0 0.08em 0 rgba(0, 0, 0, 0.38);
+    pointer-events: none;
+}
+
+.chooser-summary div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 22%;
+    align-items: center;
+    gap: 5%;
+}
+
+.chooser-summary img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.34));
+}
+
+.chooser-save {
+    left: 3.5%;
+    top: 77.1%;
+    width: 21%;
+    height: 13.9%;
+    border-radius: 18px;
 }
 
 .builder-screen {
@@ -799,6 +1320,14 @@ h2 {
     filter: grayscale(0.75) brightness(0.62) drop-shadow(2px 3px 0 rgba(0, 0, 0, 0.18));
 }
 
+.ability-btn.active-timer img {
+    filter: saturate(1.12) brightness(0.96) drop-shadow(4px 5px 0 rgba(0, 0, 0, 0.26));
+}
+
+.ability-btn.active-timer span {
+    color: #39e889;
+}
+
 .ability-btn:disabled::after {
     content: "";
     position: absolute;
@@ -807,6 +1336,10 @@ h2 {
     border-radius: 50%;
     background: rgba(5, 7, 11, 0.48);
     pointer-events: none;
+}
+
+.ability-btn.active-timer::after {
+    background: rgba(5, 7, 11, 0.18);
 }
 
 .control-zone {
