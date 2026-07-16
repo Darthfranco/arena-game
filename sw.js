@@ -1,7 +1,32 @@
-const CACHE_NAME = 'jungle-rumble-pwa-v27';
+const CACHE_NAME = 'jungle-rumble-pwa-v44';
 const CHARACTER_IDS = ['snake', 'croc', 'parrot'];
 const WEAPON_IDS = ['pistol', 'rifle', 'shotgun'];
 const TEAM_IDS = ['good', 'bad'];
+const GLYPH_FILE_NAMES = [
+    ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter => `${letter}.png`),
+    ...'0123456789'.split('').map(number => `${number}.png`),
+    'period.png',
+    'comma.png',
+    'exclamation.png',
+    'question.png',
+    'colon.png',
+    'semicolon.png',
+    'apostrophe.png',
+    'quote.png',
+    'hyphen.png',
+    'underscore.png',
+    'left_paren.png',
+    'right_paren.png',
+    'ampersand.png',
+    'plus.png',
+    'slash.png',
+    'ellipsis.png'
+];
+const FONT_ASSETS = [
+    ...GLYPH_FILE_NAMES.map(file => `./fonts/${file}`),
+    ...GLYPH_FILE_NAMES.map(file => `./fonts/yellow/${file}`),
+    ...GLYPH_FILE_NAMES.map(file => `./fonts/red/${file}`)
+];
 const DASH_ASSETS = CHARACTER_IDS.flatMap(character =>
     WEAPON_IDS.flatMap(weapon =>
         TEAM_IDS.flatMap(team =>
@@ -34,6 +59,7 @@ const APP_SHELL = [
     './assets/menu/jungle-rumble-menu.png',
     './assets/menu/jungle-rumble-settings-menu.png',
     './assets/menu/choose-your-rumbler-menu.png',
+    './assets/menu/choose-your-rumbler-menu2.png',
     './assets/snake/snake_face.png',
     './assets/croc/croc_face.png',
     './assets/parrot/parrot_face.png',
@@ -62,6 +88,7 @@ const APP_SHELL = [
     './assets/weapons/grenade/bad.png',
     './assets/weapons/bullet/good.png',
     './assets/weapons/bullet/bad.png',
+    ...FONT_ASSETS,
     ...DASH_ASSETS
 ];
 

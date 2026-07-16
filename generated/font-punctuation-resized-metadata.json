@@ -1,0 +1,198 @@
+{
+  "scale": 0.7300380228136882,
+  "canvas_h": 196,
+  "glyphs": [
+    {
+      "name": "period",
+      "size": [
+        79,
+        196
+      ],
+      "glyph_size": [
+        79,
+        80
+      ],
+      "y": 110
+    },
+    {
+      "name": "comma",
+      "size": [
+        79,
+        196
+      ],
+      "glyph_size": [
+        79,
+        109
+      ],
+      "y": 81
+    },
+    {
+      "name": "exclamation",
+      "size": [
+        82,
+        196
+      ],
+      "glyph_size": [
+        82,
+        191
+      ],
+      "y": 0
+    },
+    {
+      "name": "question",
+      "size": [
+        135,
+        196
+      ],
+      "glyph_size": [
+        135,
+        197
+      ],
+      "y": 0
+    },
+    {
+      "name": "colon",
+      "size": [
+        73,
+        196
+      ],
+      "glyph_size": [
+        73,
+        153
+      ],
+      "y": 37
+    },
+    {
+      "name": "semicolon",
+      "size": [
+        74,
+        196
+      ],
+      "glyph_size": [
+        74,
+        173
+      ],
+      "y": 17
+    },
+    {
+      "name": "apostrophe",
+      "size": [
+        66,
+        196
+      ],
+      "glyph_size": [
+        66,
+        90
+      ],
+      "y": 4
+    },
+    {
+      "name": "quote",
+      "size": [
+        132,
+        196
+      ],
+      "glyph_size": [
+        132,
+        91
+      ],
+      "y": 4
+    },
+    {
+      "name": "hyphen",
+      "size": [
+        149,
+        196
+      ],
+      "glyph_size": [
+        149,
+        64
+      ],
+      "y": 66
+    },
+    {
+      "name": "underscore",
+      "size": [
+        151,
+        196
+      ],
+      "glyph_size": [
+        151,
+        60
+      ],
+      "y": 136
+    },
+    {
+      "name": "left_paren",
+      "size": [
+        81,
+        196
+      ],
+      "glyph_size": [
+        81,
+        176
+      ],
+      "y": 14
+    },
+    {
+      "name": "right_paren",
+      "size": [
+        82,
+        196
+      ],
+      "glyph_size": [
+        82,
+        176
+      ],
+      "y": 14
+    },
+    {
+      "name": "ampersand",
+      "size": [
+        150,
+        196
+      ],
+      "glyph_size": [
+        150,
+        162
+      ],
+      "y": 28
+    },
+    {
+      "name": "plus",
+      "size": [
+        125,
+        196
+      ],
+      "glyph_size": [
+        125,
+        130
+      ],
+      "y": 60
+    },
+    {
+      "name": "slash",
+      "size": [
+        102,
+        196
+      ],
+      "glyph_size": [
+        102,
+        171
+      ],
+      "y": 19
+    },
+    {
+      "name": "ellipsis",
+      "size": [
+        162,
+        196
+      ],
+      "glyph_size": [
+        162,
+        61
+      ],
+      "y": 129
+    }
+  ]
+}

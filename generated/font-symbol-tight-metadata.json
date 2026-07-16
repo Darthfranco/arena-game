@@ -1,0 +1,370 @@
+{
+  "source": "/Users/ikeyfranco/Desktop/font_numbers_punctuation_source.png",
+  "scale": 0.7300380228136882,
+  "glyphs": [
+    {
+      "name": "period",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/period.png",
+      "source_bbox": [
+        278,
+        287,
+        386,
+        397
+      ],
+      "size": [
+        79,
+        80
+      ]
+    },
+    {
+      "name": "comma",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/comma.png",
+      "source_bbox": [
+        504,
+        277,
+        612,
+        426
+      ],
+      "size": [
+        79,
+        109
+      ]
+    },
+    {
+      "name": "exclamation",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/exclamation.png",
+      "source_bbox": [
+        729,
+        135,
+        841,
+        397
+      ],
+      "size": [
+        82,
+        191
+      ]
+    },
+    {
+      "name": "question",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/question.png",
+      "source_bbox": [
+        935,
+        128,
+        1120,
+        398
+      ],
+      "size": [
+        135,
+        197
+      ]
+    },
+    {
+      "name": "colon",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/colon.png",
+      "source_bbox": [
+        1204,
+        187,
+        1304,
+        397
+      ],
+      "size": [
+        73,
+        153
+      ]
+    },
+    {
+      "name": "semicolon",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/semicolon.png",
+      "source_bbox": [
+        1414,
+        187,
+        1516,
+        424
+      ],
+      "size": [
+        74,
+        173
+      ]
+    },
+    {
+      "name": "apostrophe",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/apostrophe.png",
+      "source_bbox": [
+        345,
+        481,
+        436,
+        604
+      ],
+      "size": [
+        66,
+        90
+      ]
+    },
+    {
+      "name": "quote",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/quote.png",
+      "source_bbox": [
+        560,
+        484,
+        741,
+        608
+      ],
+      "size": [
+        132,
+        91
+      ]
+    },
+    {
+      "name": "hyphen",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/hyphen.png",
+      "source_bbox": [
+        869,
+        558,
+        1073,
+        646
+      ],
+      "size": [
+        149,
+        64
+      ]
+    },
+    {
+      "name": "underscore",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/underscore.png",
+      "source_bbox": [
+        1185,
+        623,
+        1392,
+        705
+      ],
+      "size": [
+        151,
+        60
+      ]
+    },
+    {
+      "name": "left_paren",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/left_paren.png",
+      "source_bbox": [
+        278,
+        765,
+        389,
+        1006
+      ],
+      "size": [
+        81,
+        176
+      ]
+    },
+    {
+      "name": "right_paren",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/right_paren.png",
+      "source_bbox": [
+        476,
+        765,
+        588,
+        1006
+      ],
+      "size": [
+        82,
+        176
+      ]
+    },
+    {
+      "name": "ampersand",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/ampersand.png",
+      "source_bbox": [
+        661,
+        776,
+        866,
+        998
+      ],
+      "size": [
+        150,
+        162
+      ]
+    },
+    {
+      "name": "plus",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/plus.png",
+      "source_bbox": [
+        930,
+        801,
+        1101,
+        979
+      ],
+      "size": [
+        125,
+        130
+      ]
+    },
+    {
+      "name": "slash",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/slash.png",
+      "source_bbox": [
+        1158,
+        769,
+        1298,
+        1003
+      ],
+      "size": [
+        102,
+        171
+      ]
+    },
+    {
+      "name": "ellipsis",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/ellipsis.png",
+      "source_bbox": [
+        1324,
+        911,
+        1546,
+        994
+      ],
+      "size": [
+        162,
+        61
+      ]
+    },
+    {
+      "name": "0",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/0.png",
+      "source_bbox": [
+        246,
+        1365,
+        466,
+        1627
+      ],
+      "size": [
+        161,
+        191
+      ]
+    },
+    {
+      "name": "1",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/1.png",
+      "source_bbox": [
+        544,
+        1364,
+        698,
+        1623
+      ],
+      "size": [
+        112,
+        189
+      ]
+    },
+    {
+      "name": "2",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/2.png",
+      "source_bbox": [
+        807,
+        1362,
+        993,
+        1624
+      ],
+      "size": [
+        136,
+        191
+      ]
+    },
+    {
+      "name": "3",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/3.png",
+      "source_bbox": [
+        1081,
+        1364,
+        1269,
+        1627
+      ],
+      "size": [
+        137,
+        192
+      ]
+    },
+    {
+      "name": "4",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/4.png",
+      "source_bbox": [
+        1348,
+        1363,
+        1560,
+        1624
+      ],
+      "size": [
+        155,
+        191
+      ]
+    },
+    {
+      "name": "5",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/5.png",
+      "source_bbox": [
+        261,
+        1708,
+        455,
+        1972
+      ],
+      "size": [
+        142,
+        193
+      ]
+    },
+    {
+      "name": "6",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/6.png",
+      "source_bbox": [
+        544,
+        1706,
+        745,
+        1974
+      ],
+      "size": [
+        147,
+        196
+      ]
+    },
+    {
+      "name": "7",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/7.png",
+      "source_bbox": [
+        813,
+        1711,
+        999,
+        1972
+      ],
+      "size": [
+        136,
+        191
+      ]
+    },
+    {
+      "name": "8",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/8.png",
+      "source_bbox": [
+        1076,
+        1705,
+        1281,
+        1974
+      ],
+      "size": [
+        150,
+        196
+      ]
+    },
+    {
+      "name": "9",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/9.png",
+      "source_bbox": [
+        1338,
+        1705,
+        1544,
+        1973
+      ],
+      "size": [
+        150,
+        196
+      ]
+    }
+  ]
+}

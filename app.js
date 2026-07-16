@@ -1,4 +1,4 @@
-const APP_VERSION = '2026.07.15.8';
+const APP_VERSION = '2026.07.16.17';
 
 document.addEventListener('DOMContentLoaded', () => {
     setupServiceWorkerUpdates();
@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
         start: document.getElementById('start-screen'),
         build: document.getElementById('build-screen'),
         connect: document.getElementById('connection-screen'),
+        waiting: document.getElementById('waiting-screen'),
         settings: document.getElementById('settings-screen'),
         game: document.getElementById('game-screen')
     };
@@ -29,14 +30,59 @@ document.addEventListener('DOMContentLoaded', () => {
     const copyCodeBtn = document.getElementById('copy-code-btn');
     const hostGameBtn = document.getElementById('host-game-btn');
     const joinGameBtn = document.getElementById('join-game-btn');
+    const quickJoinBtn = document.getElementById('quick-join-btn');
     const connectionStatus = document.getElementById('connection-status');
+    const playerCountButtons = document.querySelectorAll('[data-player-count]');
+    const roomMaxButtons = document.querySelectorAll('[data-room-max]');
+    const lobbyPanel = document.getElementById('lobby-panel');
+    const lobbyTitle = document.getElementById('lobby-title');
+    const lobbyHostLabel = document.getElementById('lobby-host-label');
+    const lobbyList = document.getElementById('lobby-list');
+    const waitingStatus = document.getElementById('waiting-status');
+    const waitingRoomCode = document.getElementById('waiting-room-code');
+    const waitingPlayerCount = document.getElementById('waiting-player-count');
+    const waitingCopyCodeBtn = document.getElementById('waiting-copy-code-btn');
+    const waitingHostControls = document.getElementById('waiting-host-controls');
+    const waitingRoomList = document.getElementById('waiting-room-list');
+    const manualStartBtn = document.getElementById('manual-start-btn');
+    const leaveWaitingBtn = document.getElementById('leave-waiting-btn');
+    const waitingLeaveBtn = document.getElementById('waiting-leave-btn');
     const alertScreen = document.getElementById('alert-screen');
+    const migrationOverlay = document.getElementById('migration-overlay');
+    const migrationMessage = document.getElementById('migration-message');
     const canvas = document.getElementById('game-canvas');
     const ctx = canvas.getContext('2d');
     const healthLabel = document.getElementById('health-label');
     const hudHealthFill = document.getElementById('hud-health-fill');
     const hudShieldFill = document.getElementById('hud-shield-fill');
-    const exitGameBtn = document.getElementById('exit-game-btn');
+    const gameMenuBtn = document.getElementById('game-menu-btn');
+    const gameMenuOverlay = document.getElementById('game-menu-overlay');
+    const gameMenuPanel = document.getElementById('game-menu-panel');
+    const gameSettingsPanel = document.getElementById('game-settings-panel');
+    const hostLeaveConfirm = document.getElementById('host-leave-confirm');
+    const closeGameMenuBtn = document.getElementById('close-game-menu-btn');
+    const closeGameSettingsBtn = document.getElementById('close-game-settings-btn');
+    const gameSettingsBtn = document.getElementById('game-settings-btn');
+    const gameLeaveBtn = document.getElementById('game-leave-btn');
+    const confirmHostLeaveBtn = document.getElementById('confirm-host-leave-btn');
+    const cancelHostLeaveBtn = document.getElementById('cancel-host-leave-btn');
+    const gameRoomCode = document.getElementById('game-room-code');
+    const gamePlayerCount = document.getElementById('game-player-count');
+    const gameCopyCodeBtn = document.getElementById('game-copy-code-btn');
+    const settingsRoomCode = document.getElementById('settings-room-code');
+    const settingsPlayerCount = document.getElementById('settings-player-count');
+    const settingsCopyCodeBtn = document.getElementById('settings-copy-code-btn');
+    const gameSettingsList = document.getElementById('game-settings-list');
+    const team0ScoreLabel = document.getElementById('team-0-score');
+    const team1ScoreLabel = document.getElementById('team-1-score');
+    const roundLabel = document.getElementById('round-label');
+    const roundStatus = document.getElementById('round-status');
+    const roundOverlay = document.getElementById('round-overlay');
+    const roundResultTitle = document.getElementById('round-result-title');
+    const roundResultDetail = document.getElementById('round-result-detail');
+    const roundPanelTeam0 = document.getElementById('round-panel-team-0');
+    const roundPanelTeam1 = document.getElementById('round-panel-team-1');
+    const roundActionBtn = document.getElementById('round-action-btn');
     const reloadBtn = document.getElementById('reload-btn');
     const abilityBtn = document.getElementById('ability-btn');
     const abilityIcon = abilityBtn.querySelector('img');
@@ -55,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const builderComboArt = document.getElementById('builder-combo-art');
     const builderPreviewLabel = document.getElementById('builder-preview-label');
     const builderPreviewStats = document.getElementById('builder-preview-stats');
+    const builderMenuArt = document.querySelector('#build-screen .menu-art');
     const builderStepEyebrow = document.getElementById('builder-step-eyebrow');
     const builderStepBackBtn = document.getElementById('builder-step-back-btn');
     const builderStepNextBtn = document.getElementById('builder-step-next-btn');
@@ -68,6 +115,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const summaryAbilityArt = document.getElementById('summary-ability-art');
 
     const peerIdPrefix = 'roomtext-v1-';
+    const builderMenuArtByStep = {
+        character: `assets/menu/choose-your-rumbler-menu.png?v=${APP_VERSION}`,
+        weapon: `assets/menu/choose-your-rumbler-menu2.png?v=${APP_VERSION}`,
+        ability: `assets/menu/choose-your-rumbler-menu2.png?v=${APP_VERSION}`
+    };
     const world = { width: 1800, height: 1200 };
     const NETWORK_SEND_INTERVAL_MS = 33;
     const REMOTE_POSITION_LERP = 10;
@@ -92,8 +144,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const SHIELD_UP_AMOUNT = 30;
     const SHIELD_MAX = 100;
     const ABILITY_DRAG_VISUAL_RADIUS = 42;
+    const MIGRATION_MAX_ATTEMPTS = 14;
+    const ROUNDS_TO_WIN_MATCH = 3;
     const LOADOUT_STORAGE_KEY = 'jungle-rumble-loadout-v1';
     const SETTINGS_STORAGE_KEY = 'jungle-rumble-settings-v1';
+    const PLAYER_ID_STORAGE_KEY = 'jungle-rumble-player-id-v1';
+    const PLAYER_SESSION_STORAGE_KEY = 'jungle-rumble-player-session-id-v1';
+    const RECENT_ROOM_STORAGE_KEY = 'jungle-rumble-recent-room-v1';
     const DEFAULT_LOADOUT = { character: 'snake', weapon: 'pistol', ability: 'dash' };
     const DEFAULT_SETTINGS = { music: true, sounds: true };
     const CHARACTERS = {
@@ -166,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
             bulletLife: 0.58,
             pellets: 4,
             spread: 0.28,
-            damageLabel: 'High up close',
+            damageLabel: 'High',
             rateLabel: 'Fast',
             rangeLabel: 'Short',
             art: 'assets/weapons/shotgun/good.png'
@@ -247,9 +304,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let peer;
     let conn;
+    let intentionalDisconnect = false;
     let playerName = 'Ranger';
     let opponentName = 'Opponent';
     let currentRoomCode = '';
+    let currentJoinCode = '';
+    let sessionSecret = '';
+    let localPlayerId = getLocalPlayerId();
+    let hostPlayerId = '';
+    let maxPlayers = 2;
+    let roomStarted = false;
+    let migrationInProgress = false;
+    let migrationRestartTimer = 0;
+    let migrationRestartTargetPlayers = 0;
+    let joinRetryTimer = 0;
     let networkRole = 'solo';
     let gameMode = 'solo';
     let running = false;
@@ -261,6 +329,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let installBlocked = false;
     let orientationBlocked = false;
     let score = 0;
+    let roundScores = [0, 0];
+    let currentRound = 1;
+    let roundActive = false;
+    let roundOver = false;
+    let matchOver = false;
+    let roundWinnerTeam = -1;
     let selectedLoadout = normalizeLoadout(loadSavedLoadout());
     let draftLoadout = { ...selectedLoadout };
     let menuSettings = loadSavedSettings();
@@ -272,9 +346,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const player = createPlayer('local', world.width * 0.34, world.height * 0.5, colors.local, selectedLoadout);
     const remotePlayer = createPlayer('remote', world.width * 0.66, world.height * 0.5, colors.remote, DEFAULT_LOADOUT);
+    const remotePlayers = new Map();
+    const connections = new Map();
+    let roomPlayers = [];
     const bullets = [];
     const grenades = [];
     const impacts = [];
+    const processedHitIds = new Set();
+    const departedPlayerIds = new Set();
     const dummies = [
         { x: 900, y: 520, r: 34, hp: 80, maxHp: 80 },
         { x: 1040, y: 690, r: 34, hp: 80, maxHp: 80 },
@@ -323,6 +402,467 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch {
             return { ...DEFAULT_SETTINGS };
         }
+    }
+
+    function getLocalPlayerId() {
+        let stored = sessionStorage.getItem(PLAYER_SESSION_STORAGE_KEY);
+        if (!stored) {
+            stored = `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+            sessionStorage.setItem(PLAYER_SESSION_STORAGE_KEY, stored);
+            localStorage.setItem(PLAYER_ID_STORAGE_KEY, stored);
+        }
+        return stored;
+    }
+
+    function loadRecentRoom() {
+        try {
+            return JSON.parse(localStorage.getItem(RECENT_ROOM_STORAGE_KEY)) || null;
+        } catch {
+            return null;
+        }
+    }
+
+    function saveRecentRoom() {
+        if (!currentRoomCode && !sessionSecret) return;
+        localStorage.setItem(RECENT_ROOM_STORAGE_KEY, JSON.stringify({
+            roomCode: currentRoomCode,
+            joinCode: currentJoinCode || currentRoomCode,
+            sessionSecret,
+            playerId: localPlayerId,
+            name: playerName,
+            savedAt: Date.now()
+        }));
+        updateQuickJoinUI();
+    }
+
+    function updateQuickJoinUI() {
+        const recent = loadRecentRoom();
+        const usable = recent && (recent.joinCode || recent.roomCode || recent.sessionSecret);
+        quickJoinBtn.classList.toggle('hidden', !usable);
+        if (usable) quickJoinBtn.textContent = `Quick Join ${recent.roomCode || recent.joinCode || recent.sessionSecret}`;
+    }
+
+    function getSelectedMaxPlayers() {
+        const selected = document.querySelector('[data-player-count].selected');
+        return clamp(Number(selected ? selected.dataset.playerCount : 2) || 2, 2, 6);
+    }
+
+    function makeSecretRoomCode() {
+        return `s${Math.random().toString(36).slice(2, 7)}${Date.now().toString(36).slice(-3)}`;
+    }
+
+    function getPlayerSlot(playerId) {
+        return Math.max(0, roomPlayers.findIndex(entry => entry.id === playerId));
+    }
+
+    function getPlayerTeam(playerId) {
+        const entry = roomPlayers.find(playerEntry => playerEntry.id === playerId);
+        return entry ? Number(entry.team) || 0 : getPlayerSlot(playerId) % 2;
+    }
+
+    function canDamagePlayer(attackerId, targetId) {
+        if (!attackerId || !targetId || attackerId === targetId) return false;
+        const attackerEntry = roomPlayers.find(entry => entry.id === attackerId);
+        const targetEntry = roomPlayers.find(entry => entry.id === targetId);
+        if (attackerEntry && targetEntry) return attackerEntry.team !== targetEntry.team;
+        return attackerId !== targetId;
+    }
+
+    function isEnemyProjectile(projectile) {
+        if (projectile.ownerId) return canDamagePlayer(projectile.ownerId, localPlayerId);
+        return projectile.remote === true;
+    }
+
+    function markHitProcessed(hitId) {
+        if (!hitId) return false;
+        if (processedHitIds.has(hitId)) return true;
+        processedHitIds.add(hitId);
+        if (processedHitIds.size > 500) {
+            const first = processedHitIds.values().next().value;
+            processedHitIds.delete(first);
+        }
+        return false;
+    }
+
+    function getSpawnPoint(playerId) {
+        const points = [
+            { x: world.width * 0.28, y: world.height * 0.42 },
+            { x: world.width * 0.72, y: world.height * 0.58 },
+            { x: world.width * 0.28, y: world.height * 0.68 },
+            { x: world.width * 0.72, y: world.height * 0.32 }
+        ];
+        return points[getPlayerSlot(playerId) % points.length];
+    }
+
+    function normalizeRoster(roster = roomPlayers) {
+        const seen = new Set();
+        const normalized = roster
+            .filter(entry => entry && entry.id && !seen.has(entry.id) && seen.add(entry.id))
+            .map((entry, index) => ({
+                id: entry.id,
+                name: entry.name || 'Ranger',
+                connected: entry.connected !== false,
+                host: entry.id === hostPlayerId,
+                team: Number.isFinite(Number(entry.team)) ? clamp(Number(entry.team), 0, 1) : index % 2
+            }));
+        if ((networkRole === 'host' || networkRole === 'guest') && !seen.has(localPlayerId)) {
+            normalized.push({
+                id: localPlayerId,
+                name: playerName || 'Ranger',
+                connected: true,
+                host: localPlayerId === hostPlayerId,
+                team: normalized.length % 2
+            });
+        }
+        roomPlayers = normalized;
+        return roomPlayers;
+    }
+
+    function getOrCreateRemotePlayer(id, name = 'Opponent') {
+        if (!id || id === localPlayerId) return null;
+        const activeRosterEntry = roomPlayers.find(entry => entry.id === id && entry.connected !== false);
+        if (departedPlayerIds.has(id) && !activeRosterEntry) return null;
+        if (remotePlayers.has(id)) {
+            const existing = remotePlayers.get(id);
+            existing.name = name || existing.name;
+            return existing;
+        }
+        const spawn = getSpawnPoint(id);
+        const entity = createPlayer(id, spawn.x, spawn.y, colors.remote, DEFAULT_LOADOUT);
+        entity.name = name || 'Opponent';
+        entity.playerId = id;
+        remotePlayers.set(id, entity);
+        return entity;
+    }
+
+    function removeRemotePlayer(id, markDeparted = false) {
+        if (markDeparted && id) departedPlayerIds.add(id);
+        remotePlayers.delete(id);
+        for (let i = bullets.length - 1; i >= 0; i--) {
+            if (bullets[i].ownerId === id) bullets.splice(i, 1);
+        }
+        for (let i = grenades.length - 1; i >= 0; i--) {
+            if (grenades[i].ownerId === id) grenades.splice(i, 1);
+        }
+    }
+
+    function updateLobbyUI() {
+        normalizeRoster();
+        if (!lobbyPanel) return;
+        const inNetworkFlow = networkRole === 'host' || networkRole === 'guest';
+        lobbyPanel.classList.toggle('hidden', !inNetworkFlow || gameMode === 'pvp');
+        const hostEntry = hostPlayerId ? roomPlayers.find(entry => entry.id === hostPlayerId) : null;
+        lobbyTitle.textContent = roomStarted ? 'Game in progress' : `Waiting for players ${roomPlayers.length}/${maxPlayers}`;
+        lobbyHostLabel.textContent = hostEntry ? `Host: ${hostEntry.name}` : 'Host: connecting...';
+        lobbyList.replaceChildren();
+        for (let index = 0; index < maxPlayers; index++) {
+            const entry = roomPlayers[index];
+            const slot = document.createElement('div');
+            slot.className = `lobby-slot ${entry ? 'filled' : ''} ${entry && entry.id === hostPlayerId ? 'host' : ''} team-${index % 2}`;
+            const label = entry ? `${entry.name}${entry.id === localPlayerId ? ' (you)' : ''}` : 'Waiting...';
+            slot.innerHTML = `<i aria-hidden="true"></i><span>${label}</span><small>${entry && entry.id === hostPlayerId ? 'host' : entry ? `team ${index % 2 + 1}` : ''}</small>`;
+            lobbyList.appendChild(slot);
+        }
+        updateRoomUI();
+    }
+
+    function isLocalHost() {
+        return networkRole === 'host' && hostPlayerId === localPlayerId;
+    }
+
+    function getRoomJoinCode() {
+        return currentJoinCode || currentRoomCode || sessionSecret || '------';
+    }
+
+    function copyRoomCode() {
+        const code = getRoomJoinCode();
+        navigator.clipboard.writeText(code).then(() => showAlert(`Copied ${code}`)).catch(() => showAlert(code));
+    }
+
+    function setRoomMaxPlayers(value) {
+        if (!isLocalHost()) return;
+        const nextMax = clamp(Number(value) || maxPlayers, Math.max(2, roomPlayers.length), 6);
+        maxPlayers = nextMax;
+        broadcastLobby();
+        updateRoomUI();
+        saveRecentRoom();
+    }
+
+    function setRoomPlayerTeam(id, team) {
+        if (!isLocalHost() || !id) return;
+        const entry = roomPlayers.find(playerEntry => playerEntry.id === id);
+        if (!entry) return;
+        entry.team = clamp(Number(team) || 0, 0, 1);
+        normalizeRoster();
+        broadcastLobby();
+        updateRoomUI();
+    }
+
+    function kickRoomPlayer(id) {
+        if (!isLocalHost() || !id || id === localPlayerId) return;
+        const connection = connections.get(id);
+        if (connection && connection.open) {
+            connection.send({ type: 'kicked', reason: 'You were kicked from the room.' });
+            connection.close();
+        }
+        handleGuestDisconnect(id);
+    }
+
+    function makeRoomPlayerRow(entry, options = {}) {
+        const row = document.createElement('div');
+        const team = Number(entry.team) || 0;
+        row.className = `room-player-row team-${team} ${entry.id === hostPlayerId ? 'host' : ''}`;
+        const isYou = entry.id === localPlayerId;
+        const canEdit = options.editable === true && isLocalHost();
+        row.innerHTML = `
+            <div class="room-player-main">
+                <i aria-hidden="true"></i>
+                <strong>${entry.name}${isYou ? ' (you)' : ''}</strong>
+                <span>${entry.id === hostPlayerId ? 'host' : `team ${team + 1}`}</span>
+            </div>
+            <div class="room-player-actions"></div>
+        `;
+        const actions = row.querySelector('.room-player-actions');
+        if (canEdit) {
+            const teamToggle = document.createElement('button');
+            teamToggle.className = 'mini-btn';
+            teamToggle.type = 'button';
+            teamToggle.textContent = `Team ${team + 1}`;
+            teamToggle.dataset.teamTarget = entry.id;
+            teamToggle.dataset.nextTeam = team === 0 ? '1' : '0';
+            actions.appendChild(teamToggle);
+            if (!isYou) {
+                const kickBtn = document.createElement('button');
+                kickBtn.className = 'mini-btn danger';
+                kickBtn.type = 'button';
+                kickBtn.textContent = 'Kick';
+                kickBtn.dataset.kickTarget = entry.id;
+                actions.appendChild(kickBtn);
+            }
+        }
+        return row;
+    }
+
+    function renderRoomPlayerList(container, options = {}) {
+        if (!container) return;
+        normalizeRoster();
+        container.replaceChildren();
+        roomPlayers.forEach(entry => container.appendChild(makeRoomPlayerRow(entry, options)));
+        for (let index = roomPlayers.length; index < maxPlayers; index++) {
+            const row = document.createElement('div');
+            row.className = `room-player-row empty team-${index % 2}`;
+            row.innerHTML = `<div class="room-player-main"><i aria-hidden="true"></i><strong>Waiting...</strong><span>open slot</span></div>`;
+            container.appendChild(row);
+        }
+    }
+
+    function updateRoomMaxButtons() {
+        roomMaxButtons.forEach(button => {
+            const value = Number(button.dataset.roomMax);
+            const selected = value === maxPlayers;
+            button.classList.toggle('selected', selected);
+            button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+            button.disabled = !isLocalHost() || value < Math.max(2, roomPlayers.length);
+        });
+    }
+
+    function updateRoomUI() {
+        normalizeRoster();
+        const countText = `${roomPlayers.length}/${maxPlayers}`;
+        const code = getRoomJoinCode();
+        [waitingRoomCode, gameRoomCode, settingsRoomCode].forEach(element => {
+            if (element) element.textContent = code;
+        });
+        [waitingPlayerCount, gamePlayerCount, settingsPlayerCount].forEach(element => {
+            if (element) element.textContent = countText;
+        });
+        if (waitingStatus) {
+            waitingStatus.textContent = isLocalHost()
+                ? 'Set teams, choose room size, then start when ready.'
+                : 'Waiting for the host to start the match.';
+        }
+        if (waitingHostControls) waitingHostControls.classList.toggle('hidden', !isLocalHost());
+        if (manualStartBtn) {
+            manualStartBtn.classList.toggle('hidden', !isLocalHost());
+            manualStartBtn.disabled = !isLocalHost() || roomPlayers.length < 1;
+        }
+        if (gameSettingsBtn) gameSettingsBtn.classList.toggle('hidden', !isLocalHost());
+        renderRoomPlayerList(waitingRoomList, { editable: true });
+        renderRoomPlayerList(gameSettingsList, { editable: true });
+        updateRoomMaxButtons();
+    }
+
+    function openGameMenu(panel = 'menu') {
+        updateRoomUI();
+        gameMenuOverlay.classList.remove('hidden');
+        gameMenuPanel.classList.toggle('hidden', panel !== 'menu');
+        gameSettingsPanel.classList.toggle('hidden', panel !== 'settings');
+        hostLeaveConfirm.classList.toggle('hidden', panel !== 'confirm');
+    }
+
+    function closeGameMenu() {
+        gameMenuOverlay.classList.add('hidden');
+    }
+
+    function leaveCurrentRoom(force = false) {
+        if (!force && isLocalHost() && roomPlayers.length > 1) {
+            openGameMenu('confirm');
+            return;
+        }
+        stopGame();
+    }
+
+    function resetMatchState() {
+        roundScores = [0, 0];
+        currentRound = 1;
+        roundActive = false;
+        roundOver = false;
+        matchOver = false;
+        roundWinnerTeam = -1;
+        updateRoundHud();
+        hideRoundOverlay();
+    }
+
+    function startRound(options = {}) {
+        roundActive = true;
+        roundOver = false;
+        matchOver = false;
+        roundWinnerTeam = -1;
+        resetPlayers(false);
+        hideRoundOverlay();
+        updateRoundHud();
+        showScreen('game');
+        hideMigrationOverlay();
+        if (options.announce !== false) showAlert(`Round ${currentRound}`);
+    }
+
+    function updateRoundHud() {
+        if (team0ScoreLabel) team0ScoreLabel.textContent = roundScores[0].toString();
+        if (team1ScoreLabel) team1ScoreLabel.textContent = roundScores[1].toString();
+        if (roundLabel) roundLabel.textContent = `Round ${currentRound}`;
+        if (roundStatus) {
+            if (gameMode !== 'pvp') roundStatus.textContent = 'Solo';
+            else if (matchOver) roundStatus.textContent = `Team ${roundWinnerTeam + 1} wins game`;
+            else if (roundOver) roundStatus.textContent = `Team ${roundWinnerTeam + 1} wins round`;
+            else if (player.alive === false || player.hp <= 0) roundStatus.textContent = 'Spectating';
+            else roundStatus.textContent = 'Elimination';
+        }
+    }
+
+    function hideRoundOverlay() {
+        if (roundOverlay) roundOverlay.classList.add('hidden');
+    }
+
+    function showRoundOverlay() {
+        if (!roundOverlay) return;
+        const winnerText = roundWinnerTeam >= 0 ? `Team ${roundWinnerTeam + 1}` : 'Round';
+        roundResultTitle.textContent = matchOver ? `${winnerText} Wins Game` : `${winnerText} Wins Round`;
+        roundResultDetail.textContent = matchOver ? 'First to 3 rounds wins.' : `Round ${currentRound} complete.`;
+        roundPanelTeam0.textContent = roundScores[0].toString();
+        roundPanelTeam1.textContent = roundScores[1].toString();
+        roundActionBtn.textContent = matchOver ? 'Play Again' : 'Next Round';
+        roundActionBtn.classList.toggle('hidden', !isLocalHost());
+        roundOverlay.classList.remove('hidden');
+    }
+
+    function eliminateLocalPlayer() {
+        if (player.alive === false) return;
+        player.hp = 0;
+        player.shield = 0;
+        player.alive = false;
+        player.invisibleTimer = 0;
+        player.dashTimer = 0;
+        player.vx = 0;
+        player.vy = 0;
+        resetInput();
+        updateHud();
+        updateRoundHud();
+        showAlert('Eliminated. Spectating.');
+        sendData(playerSnapshot('hit', {
+            damage: 0,
+            hp: player.hp,
+            shield: player.shield,
+            invisibleTimer: player.invisibleTimer,
+            alive: false
+        }));
+    }
+
+    function getRoundCombatants() {
+        return roomPlayers
+            .filter(entry => entry.connected !== false)
+            .map(entry => ({
+                ...entry,
+                entity: entry.id === localPlayerId ? player : remotePlayers.get(entry.id)
+            }))
+            .filter(entry => entry.entity);
+    }
+
+    function checkRoundWinner() {
+        if (!isLocalHost() || !roundActive || roundOver || gameMode !== 'pvp') return;
+        const combatants = getRoundCombatants();
+        const presentTeams = new Set(combatants.map(entry => Number(entry.team) || 0));
+        if (presentTeams.size < 2) return;
+        const aliveByTeam = [0, 0];
+        combatants.forEach(entry => {
+            const team = clamp(Number(entry.team) || 0, 0, 1);
+            if (entry.entity.alive !== false && entry.entity.hp > 0) aliveByTeam[team] += 1;
+        });
+        if (aliveByTeam[0] > 0 && aliveByTeam[1] === 0) finishRound(0);
+        else if (aliveByTeam[1] > 0 && aliveByTeam[0] === 0) finishRound(1);
+    }
+
+    function finishRound(winnerTeam, incomingScores = null) {
+        if (roundOver && !incomingScores) return;
+        roundActive = false;
+        roundOver = true;
+        roundWinnerTeam = clamp(Number(winnerTeam) || 0, 0, 1);
+        if (incomingScores) {
+            roundScores = [
+                clamp(Number(incomingScores[0]) || 0, 0, ROUNDS_TO_WIN_MATCH),
+                clamp(Number(incomingScores[1]) || 0, 0, ROUNDS_TO_WIN_MATCH)
+            ];
+        } else {
+            roundScores[roundWinnerTeam] = Math.min(ROUNDS_TO_WIN_MATCH, roundScores[roundWinnerTeam] + 1);
+        }
+        matchOver = roundScores[roundWinnerTeam] >= ROUNDS_TO_WIN_MATCH;
+        bullets.length = 0;
+        grenades.length = 0;
+        updateRoundHud();
+        showRoundOverlay();
+        if (isLocalHost()) {
+            broadcastData({
+                type: 'round-result',
+                winnerTeam: roundWinnerTeam,
+                scores: roundScores,
+                round: currentRound,
+                matchOver,
+                roster: roomPlayers,
+                maxPlayers,
+                hostId: hostPlayerId,
+                sessionSecret
+            });
+        }
+    }
+
+    function hostAdvanceRound() {
+        if (!isLocalHost() || !roundOver) return;
+        if (matchOver) {
+            resetMatchState();
+        } else {
+            currentRound += 1;
+            roundOver = false;
+            roundWinnerTeam = -1;
+        }
+        broadcastData({
+            type: 'round-start',
+            scores: roundScores,
+            round: currentRound,
+            roster: roomPlayers,
+            maxPlayers,
+            hostId: hostPlayerId,
+            sessionSecret
+        });
+        startRound();
     }
 
     function saveMenuSettings() {
@@ -418,6 +958,105 @@ document.addEventListener('DOMContentLoaded', () => {
     function abilityStatText(abilityId) {
         const ability = getAbility(abilityId);
         return `${ability.stat} · ${ability.detail}`;
+    }
+
+    const glyphFiles = {
+        '.': 'period.png',
+        ',': 'comma.png',
+        '!': 'exclamation.png',
+        '?': 'question.png',
+        ':': 'colon.png',
+        ';': 'semicolon.png',
+        "'": 'apostrophe.png',
+        '"': 'quote.png',
+        '-': 'hyphen.png',
+        '_': 'underscore.png',
+        '(': 'left_paren.png',
+        ')': 'right_paren.png',
+        '&': 'ampersand.png',
+        '+': 'plus.png',
+        '/': 'slash.png',
+        '...': 'ellipsis.png'
+    };
+
+    function glyphFileFor(char) {
+        const upper = char.toUpperCase();
+        if (/^[A-Z]$/.test(upper)) return `${upper}.png`;
+        if (/^[0-9]$/.test(char)) return `${char}.png`;
+        return glyphFiles[char] || '';
+    }
+
+    function createGlyph(char, color = 'white') {
+        const file = glyphFileFor(char);
+        if (file) {
+            const image = document.createElement('img');
+            image.className = 'glyph-char';
+            image.alt = char;
+            image.decoding = 'async';
+            image.draggable = false;
+            image.src = color === 'white' ? `fonts/${file}` : `fonts/${color}/${file}`;
+            return image;
+        }
+
+        const span = document.createElement('span');
+        span.className = char === ' ' ? 'glyph-space' : 'glyph-plain';
+        span.textContent = char === ' ' ? '' : char;
+        return span;
+    }
+
+    function renderGlyphText(target, text, { color = 'white', className = '' } = {}) {
+        const value = String(text ?? '');
+        const compactTitle = className.includes('glyph-text-title') && value.replace(/\s/g, '').length > 9;
+        const fragment = document.createDocumentFragment();
+
+        target.textContent = '';
+        target.classList.add('glyph-text');
+        ['glyph-text-white', 'glyph-text-yellow', 'glyph-text-red', 'glyph-text-title', 'glyph-text-title-compact', 'glyph-text-stat', 'glyph-text-small', 'glyph-text-summary', 'glyph-stat-grid', 'glyph-stat-grid-three'].forEach(name => {
+            target.classList.remove(name);
+        });
+        target.classList.add(`glyph-text-${color}`);
+        if (className) target.classList.add(className);
+        if (compactTitle) target.classList.add('glyph-text-title-compact');
+        target.setAttribute('aria-label', value);
+
+        value.split('\n').forEach(textLine => {
+            const line = document.createElement('span');
+            line.className = 'glyph-line';
+            for (let i = 0; i < textLine.length; i += 1) {
+                if (textLine.slice(i, i + 3) === '...') {
+                    line.appendChild(createGlyph('...', color));
+                    i += 2;
+                    continue;
+                }
+                line.appendChild(createGlyph(textLine[i], color));
+            }
+            fragment.appendChild(line);
+        });
+        target.replaceChildren(fragment);
+    }
+
+    function renderChooserStats(stats, { columns = 2 } = {}) {
+        builderPreviewStats.replaceChildren();
+        builderPreviewStats.className = columns === 3
+            ? 'glyph-stat-grid glyph-stat-grid-three'
+            : 'glyph-stat-grid';
+
+        stats.forEach((stat, index) => {
+            const block = document.createElement('span');
+            block.className = 'glyph-stat-block';
+            const label = document.createElement('span');
+            const value = document.createElement('span');
+            renderGlyphText(label, stat.label, { color: 'white', className: 'glyph-text-stat-label' });
+            renderGlyphText(value, stat.value, { color: stat.color || 'white', className: 'glyph-text-stat-value' });
+            block.append(label, value);
+            builderPreviewStats.appendChild(block);
+
+            if (index < stats.length - 1) {
+                const divider = document.createElement('i');
+                divider.setAttribute('aria-hidden', 'true');
+                builderPreviewStats.appendChild(divider);
+            }
+        });
     }
 
     function setBuilderStep(step) {
@@ -536,6 +1175,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const onWeaponStep = builderStep === 'weapon';
         const onAbilityStep = builderStep === 'ability';
 
+        builderMenuArt.src = builderMenuArtByStep[builderStep] || builderMenuArtByStep.character;
         characterOptions.classList.toggle('hidden', !onCharacterStep);
         weaponOptions.classList.toggle('hidden', !onWeaponStep);
         abilityOptions.classList.toggle('hidden', !onAbilityStep);
@@ -560,32 +1200,36 @@ document.addEventListener('DOMContentLoaded', () => {
         summaryCharacterArt.src = character.face;
         summaryWeaponArt.src = weapon.art;
         summaryAbilityArt.src = ability.art;
-        builderPreviewLabel.textContent = onAbilityStep ? ability.name : onWeaponStep ? weapon.name : character.name.toLowerCase();
+        document.querySelectorAll('.chooser-summary > div > span').forEach((label, index) => {
+            renderGlyphText(label, ['character', 'weapon', 'ability'][index] || '', { color: 'white', className: 'glyph-text-summary' });
+        });
+        renderGlyphText(
+            builderPreviewLabel,
+            onAbilityStep ? ability.name : onWeaponStep ? weapon.name : character.name,
+            { color: 'yellow', className: 'glyph-text-title' }
+        );
         if (onCharacterStep) {
-            builderPreviewStats.innerHTML = `
-                <span class="character-stat-grid">
-                    <span>speed<br>${character.speedLabel.toLowerCase()}</span>
-                    <i aria-hidden="true"></i>
-                    <span>health<br><b>${character.hp}</b></span>
-                </span>
-            `;
+            renderChooserStats([
+                { label: 'speed', value: character.speedLabel },
+                { label: 'health', value: character.hp, color: 'red' }
+            ]);
             builderWeaponStat.classList.add('hidden');
             builderCharacterStat.classList.add('hidden');
         } else if (onWeaponStep) {
-            builderPreviewStats.innerHTML = `
-                <span class="character-stat-grid weapon-stat-grid">
-                    <span>ammo<br>${weapon.ammo}</span>
-                    <i aria-hidden="true"></i>
-                    <span>attack speed<br>${weapon.rateLabel}</span>
-                    <i aria-hidden="true"></i>
-                    <span>damage<br>${weapon.damageLabel}</span>
-                </span>
-            `;
+            renderChooserStats([
+                { label: 'ammo', value: weapon.ammo },
+                { label: 'attack speed', value: weapon.rateLabel },
+                { label: 'damage', value: weapon.damageLabel }
+            ], { columns: 3 });
             builderWeaponStat.classList.add('hidden');
             builderCharacterStat.classList.add('hidden');
         } else {
-            builderPreviewStats.textContent = ability.stat;
-            builderWeaponStat.textContent = ability.mode === 'passive' ? 'Passive ability' : `${Math.round(ability.cooldown)}s cooldown`;
+            renderGlyphText(builderPreviewStats, ability.stat, { color: 'white', className: 'glyph-text-stat' });
+            renderGlyphText(
+                builderWeaponStat,
+                ability.mode === 'passive' ? 'Passive ability' : `${Math.round(ability.cooldown)}s cooldown`,
+                { color: 'white', className: 'glyph-text-small' }
+            );
             builderWeaponStat.classList.remove('hidden');
             builderCharacterStat.classList.add('hidden');
         }
@@ -777,6 +1421,37 @@ document.addEventListener('DOMContentLoaded', () => {
         alertTimer = setTimeout(() => alertScreen.classList.remove('show'), duration);
     }
 
+    function showMigrationOverlay(message = 'Starting new match...') {
+        migrationMessage.textContent = message;
+        migrationOverlay.classList.remove('hidden');
+    }
+
+    function hideMigrationOverlay() {
+        migrationOverlay.classList.add('hidden');
+    }
+
+    function getConnectedPlayerCount() {
+        return roomPlayers.filter(entry => entry.connected !== false).length;
+    }
+
+    function clearMigrationRestartTimer() {
+        clearTimeout(migrationRestartTimer);
+        migrationRestartTimer = 0;
+    }
+
+    function queueMigratedRestart(delay = 850) {
+        if (roomStarted || migrationRestartTimer) return;
+        const restartTarget = migrationRestartTargetPlayers || maxPlayers;
+        if (getConnectedPlayerCount() < restartTarget) {
+            showMigrationOverlay(`Waiting for players ${getConnectedPlayerCount()}/${restartTarget}...`);
+            return;
+        }
+        hideMigrationOverlay();
+        showScreen('waiting');
+        updateRoomUI();
+        if (isLocalHost()) showAlert('You are the new host. Start when ready.');
+    }
+
     function setPlayerName() {
         playerName = playerNameInput.value.trim() || 'Ranger';
         player.name = playerName;
@@ -787,9 +1462,17 @@ document.addEventListener('DOMContentLoaded', () => {
         hostGameBtn.disabled = false;
         joinGameBtn.disabled = false;
         copyCodeBtn.classList.add('hidden');
+        lobbyPanel.classList.add('hidden');
+        hideMigrationOverlay();
+        updateQuickJoinUI();
     }
 
-    function cleanupPeer() {
+    function cleanupPeer(options = {}) {
+        intentionalDisconnect = options.intentional !== false;
+        clearInterval(joinRetryTimer);
+        joinRetryTimer = 0;
+        connections.forEach(connection => connection.close());
+        connections.clear();
         if (conn) {
             conn.close();
             conn = null;
@@ -798,12 +1481,32 @@ document.addEventListener('DOMContentLoaded', () => {
             peer.destroy();
             peer = null;
         }
+        if (intentionalDisconnect) {
+            clearMigrationRestartTimer();
+            setTimeout(() => {
+                intentionalDisconnect = false;
+            }, 0);
+        }
     }
 
     function sendData(data) {
-        if (conn && conn.open) {
-            conn.send(data);
+        const message = {
+            ...data,
+            playerId: localPlayerId,
+            name: playerName,
+            sessionSecret
+        };
+        if (networkRole === 'host') {
+            broadcastData(message);
+        } else if (conn && conn.open) {
+            conn.send(message);
         }
+    }
+
+    function broadcastData(data, exceptId = '') {
+        connections.forEach((connection, id) => {
+            if (id !== exceptId && connection.open) connection.send(data);
+        });
     }
 
     function playerSnapshot(type = 'state', extra = {}) {
@@ -835,20 +1538,26 @@ document.addEventListener('DOMContentLoaded', () => {
         cleanupPeer();
         setPlayerName();
         currentRoomCode = roomCode;
+        currentJoinCode = roomCode;
+        sessionSecret = makeSecretRoomCode();
+        hostPlayerId = localPlayerId;
+        roomStarted = false;
         networkRole = 'host';
+        maxPlayers = getSelectedMaxPlayers();
+        migrationRestartTargetPlayers = 0;
+        roomPlayers = [{ id: localPlayerId, name: playerName, connected: true, host: true, team: 0 }];
+        remotePlayers.clear();
         peer = new Peer(peerIdPrefix + roomCode);
-        connectionStatus.textContent = `Room code is ${roomCode}. Waiting...`;
+        connectionStatus.textContent = `Room code is ${roomCode}. Waiting for ${maxPlayers - 1} more.`;
         copyCodeBtn.classList.remove('hidden');
         hostGameBtn.disabled = true;
         joinGameBtn.disabled = true;
+        saveRecentRoom();
+        updateLobbyUI();
+        showScreen('waiting');
 
         peer.on('connection', newConn => {
-            if (conn && conn.open) {
-                newConn.close();
-                return;
-            }
-            conn = newConn;
-            setupConnectionEvents(conn);
+            setupHostConnection(newConn);
         });
 
         peer.on('error', err => {
@@ -857,19 +1566,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function initializeJoin(roomCode) {
+    function initializeJoin(roomCode, options = {}) {
         cleanupPeer();
         setPlayerName();
-        currentRoomCode = roomCode;
+        currentRoomCode = options.publicCode || roomCode;
+        currentJoinCode = roomCode;
+        hostPlayerId = '';
+        roomStarted = false;
+        migrationRestartTargetPlayers = 0;
+        roomPlayers = [{ id: localPlayerId, name: playerName, connected: true, host: false, team: 0 }];
+        remotePlayers.clear();
         networkRole = 'guest';
         peer = new Peer();
         connectionStatus.textContent = `Joining room ${roomCode}...`;
         hostGameBtn.disabled = true;
         joinGameBtn.disabled = true;
+        lobbyPanel.classList.remove('hidden');
+        updateLobbyUI();
+        showScreen('waiting');
 
         peer.on('open', () => {
             conn = peer.connect(peerIdPrefix + roomCode, { reliable: true });
-            setupConnectionEvents(conn);
+            setupGuestConnection(conn, options.reconnect === true);
         });
 
         peer.on('error', err => {
@@ -878,39 +1596,444 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function setupConnectionEvents(connection) {
-        connection.on('data', handleData);
+    function setupHostConnection(connection) {
+        const sendHostReady = () => {
+            if (!connection.open) return;
+            connection.send({
+                type: 'host-ready',
+                playerId: localPlayerId,
+                hostId: hostPlayerId,
+                roomCode: currentRoomCode,
+                joinCode: currentJoinCode,
+                sessionSecret,
+                maxPlayers,
+                roster: roomPlayers,
+                started: roomStarted
+            });
+        };
+        if (connection.open) sendHostReady();
+        else connection.on('open', sendHostReady);
+        connection.on('data', data => {
+            if (!data || typeof data !== 'object') return;
+            if (data.type === 'join') {
+                registerGuest(connection, data);
+                return;
+            }
+            const sourceId = connection.playerId || data.playerId;
+            if (!sourceId) return;
+            const message = { ...data, playerId: sourceId };
+            handleData(message);
+            broadcastData(message, sourceId);
+        });
         connection.on('close', () => {
-            if (gameMode === 'pvp') {
-                showAlert('Connection lost.');
+            handleGuestDisconnect(connection.playerId);
+        });
+        connection.on('error', () => handleGuestDisconnect(connection.playerId));
+    }
+
+    function retryMigratedConnection(attempt) {
+        if (!migrationInProgress) return;
+        if (attempt < MIGRATION_MAX_ATTEMPTS) {
+            setTimeout(() => connectToMigratedHost(attempt + 1), 500 + attempt * 300);
+        } else {
+            migrationInProgress = false;
+            showAlert('Could not reconnect to new host.');
+        }
+    }
+
+    function setupGuestConnection(connection, reconnect = false, reconnectAttempt = 0) {
+        let migratedRetryScheduled = false;
+        const scheduleMigratedRetry = () => {
+            if (migratedRetryScheduled) return;
+            migratedRetryScheduled = true;
+            retryMigratedConnection(reconnectAttempt);
+        };
+        connection.on('data', data => handleData(data));
+        connection.on('close', () => {
+            if (reconnect && migrationInProgress) scheduleMigratedRetry();
+            else if (!intentionalDisconnect && gameMode === 'pvp') beginHostMigration();
+            else if (!intentionalDisconnect) resetConnectionUI();
+        });
+        connection.on('error', () => {
+            if (reconnect && migrationInProgress) scheduleMigratedRetry();
+            else if (gameMode === 'pvp') beginHostMigration();
+            else showAlert('Connection failed.');
+        });
+        const sendJoin = () => {
+            if (!connection.open) return;
+            connection.send({
+                type: 'join',
+                playerId: localPlayerId,
+                name: playerName,
+                loadout: player.loadout,
+                reconnect,
+                sessionSecret
+            });
+        };
+        if (connection.open) {
+            sendJoin();
+        } else {
+            connection.on('open', sendJoin);
+        }
+        clearInterval(joinRetryTimer);
+        joinRetryTimer = setInterval(sendJoin, 700);
+    }
+
+    function registerGuest(connection, data) {
+        const id = data.playerId || connection.peer;
+        if (!id) return;
+        departedPlayerIds.delete(id);
+        if (id === localPlayerId) {
+            connection.send({ type: 'join-denied', reason: 'Same browser player id. Try joining again.', resetPlayerId: true });
+            connection.close();
+            return;
+        }
+        const existingIndex = roomPlayers.findIndex(entry => entry.id === id);
+        if (existingIndex < 0 && roomPlayers.length >= maxPlayers) {
+            connection.send({ type: 'join-denied', reason: 'Room is full.' });
+            connection.close();
+            return;
+        }
+        connection.playerId = id;
+        connections.set(id, connection);
+        if (existingIndex >= 0) {
+            roomPlayers[existingIndex] = { ...roomPlayers[existingIndex], name: data.name || roomPlayers[existingIndex].name, connected: true };
+        } else {
+            roomPlayers.push({ id, name: data.name || 'Ranger', connected: true, host: false, team: roomPlayers.length % 2 });
+        }
+        normalizeRoster();
+        getOrCreateRemotePlayer(id, data.name);
+        connection.send({
+            type: 'welcome',
+            playerId: localPlayerId,
+            hostId: hostPlayerId,
+            roomCode: currentRoomCode,
+            joinCode: currentJoinCode,
+            sessionSecret,
+            maxPlayers,
+            roster: roomPlayers,
+            started: roomStarted,
+            scores: roundScores,
+            round: currentRound,
+            roundOver,
+            matchOver,
+            winnerTeam: roundWinnerTeam,
+            state: playerSnapshot('state')
+        });
+        connection.send({
+            type: 'lobby',
+            playerId: localPlayerId,
+            hostId: hostPlayerId,
+            roomCode: currentRoomCode,
+            joinCode: currentJoinCode,
+            sessionSecret,
+            maxPlayers,
+            roster: roomPlayers,
+            started: roomStarted
+        });
+        broadcastLobby();
+        updateLobbyUI();
+        if (!roomStarted && currentJoinCode === sessionSecret && sessionSecret) {
+            const restartTarget = migrationRestartTargetPlayers || maxPlayers;
+            if (getConnectedPlayerCount() >= restartTarget) {
+                hideMigrationOverlay();
+                showScreen('waiting');
+                updateRoomUI();
             } else {
-                resetConnectionUI();
+                showMigrationOverlay(`Waiting for players ${getConnectedPlayerCount()}/${restartTarget}...`);
+            }
+        } else if (roomStarted) {
+            connection.send({
+                type: 'start',
+                roster: roomPlayers,
+                maxPlayers,
+                hostId: hostPlayerId,
+                sessionSecret,
+                scores: roundScores,
+                round: currentRound
+            });
+            if (roundOver) {
+                connection.send({
+                    type: 'round-result',
+                    winnerTeam: roundWinnerTeam,
+                    scores: roundScores,
+                    round: currentRound,
+                    matchOver,
+                    roster: roomPlayers,
+                    maxPlayers,
+                    hostId: hostPlayerId,
+                    sessionSecret
+                });
+            }
+            sendData(playerSnapshot());
+        }
+    }
+
+    function broadcastLobby() {
+        normalizeRoster();
+        broadcastData({
+            type: 'lobby',
+            playerId: localPlayerId,
+            hostId: hostPlayerId,
+            roomCode: currentRoomCode,
+            joinCode: currentJoinCode,
+            sessionSecret,
+            maxPlayers,
+            roster: roomPlayers,
+            started: roomStarted
+        });
+        updateRoomUI();
+    }
+
+    function startNetworkMatch(options = {}) {
+        clearMigrationRestartTimer();
+        migrationRestartTargetPlayers = 0;
+        resetMatchState();
+        roomStarted = true;
+        normalizeRoster();
+        saveRecentRoom();
+        broadcastData({ type: 'start', roster: roomPlayers, maxPlayers, hostId: hostPlayerId, sessionSecret, scores: roundScores, round: currentRound });
+        startGame('pvp');
+        showAlert(options.migrated ? 'New match started.' : 'All players joined.');
+    }
+
+    function handleGuestDisconnect(id) {
+        if (!id || networkRole !== 'host') return;
+        connections.delete(id);
+        const entry = roomPlayers.find(playerEntry => playerEntry.id === id);
+        if (entry) entry.connected = false;
+        removeRemotePlayer(id, true);
+        roomPlayers = roomPlayers.filter(playerEntry => playerEntry.id !== id);
+        normalizeRoster();
+        broadcastData({ type: 'player-left', id, roster: roomPlayers, hostId: hostPlayerId, maxPlayers, sessionSecret });
+        broadcastLobby();
+        updateLobbyUI();
+        checkRoundWinner();
+        showAlert(`${entry ? entry.name : 'Player'} left.`);
+    }
+
+    function getNextHostId() {
+        const candidates = roomPlayers.filter(entry => entry.id !== hostPlayerId && entry.connected !== false);
+        return candidates[0] ? candidates[0].id : localPlayerId;
+    }
+
+    function beginHostMigration() {
+        if (migrationInProgress || !sessionSecret) return;
+        migrationInProgress = true;
+        const oldHostId = hostPlayerId;
+        roomPlayers = roomPlayers.filter(entry => entry.id !== oldHostId);
+        if (!roomPlayers.some(entry => entry.id === localPlayerId)) {
+            roomPlayers.push({ id: localPlayerId, name: playerName, connected: true });
+        }
+        hostPlayerId = getNextHostId();
+        currentJoinCode = sessionSecret;
+        migrationRestartTargetPlayers = Math.max(1, roomPlayers.length);
+        roomStarted = false;
+        roomPlayers = roomPlayers.map(entry => ({
+            ...entry,
+            connected: entry.id === localPlayerId
+        }));
+        normalizeRoster();
+        removeRemotePlayer(oldHostId, true);
+        resetInput();
+        saveRecentRoom();
+        showMigrationOverlay('Starting new match...');
+        if (hostPlayerId === localPlayerId) {
+            setTimeout(becomeMigratedHost, 120);
+        } else {
+            setTimeout(() => connectToMigratedHost(0), 650);
+        }
+    }
+
+    function becomeMigratedHost() {
+        cleanupPeer({ intentional: false });
+        networkRole = 'host';
+        hostPlayerId = localPlayerId;
+        roomStarted = false;
+        currentJoinCode = sessionSecret;
+        connections.clear();
+        normalizeRoster();
+        peer = new Peer(peerIdPrefix + sessionSecret);
+        peer.on('connection', setupHostConnection);
+        peer.on('open', () => {
+            migrationInProgress = false;
+            saveRecentRoom();
+            broadcastLobby();
+            queueMigratedRestart();
+        });
+        peer.on('error', err => {
+            if (err && err.type === 'unavailable-id') {
+                showAlert('Another player became host. Rejoining...', 1600);
+                setTimeout(() => connectToMigratedHost(0), 350);
+                return;
+            }
+            migrationInProgress = false;
+            hideMigrationOverlay();
+            showAlert(`Host migration failed${err && err.type ? `: ${err.type}` : ''}.`);
+        });
+    }
+
+    function connectToMigratedHost(attempt = 0) {
+        cleanupPeer({ intentional: false });
+        networkRole = 'guest';
+        currentJoinCode = sessionSecret;
+        peer = new Peer();
+        peer.on('open', () => {
+            conn = peer.connect(peerIdPrefix + sessionSecret, { reliable: true });
+            setupGuestConnection(conn, true, attempt);
+        });
+        peer.on('error', () => {
+            if (attempt < MIGRATION_MAX_ATTEMPTS) {
+                setTimeout(() => connectToMigratedHost(attempt + 1), 500 + attempt * 300);
+            } else {
+                migrationInProgress = false;
+                hideMigrationOverlay();
+                showAlert('Could not reconnect to new host.');
             }
         });
-        connection.on('error', () => showAlert('Connection failed.'));
-
-        const openGame = () => {
-            startGame('pvp');
-            sendData(playerSnapshot('hello', {
-                name: playerName,
-                color: player.color
-            }));
-        };
-
-        if (connection.open) {
-            openGame();
-        } else {
-            connection.on('open', openGame);
-        }
     }
 
     function handleData(data) {
         if (!data || typeof data !== 'object') return;
+        if (data.playerId === localPlayerId && data.type !== 'welcome') return;
+
+        if (data.type === 'join-denied') {
+            clearInterval(joinRetryTimer);
+            joinRetryTimer = 0;
+            if (data.resetPlayerId) {
+                sessionStorage.removeItem(PLAYER_SESSION_STORAGE_KEY);
+                localPlayerId = getLocalPlayerId();
+                showAlert('New player slot created. Try joining again.');
+                resetConnectionUI();
+                return;
+            }
+            showAlert(data.reason || 'Could not join room.');
+            resetConnectionUI();
+            return;
+        }
+
+        if (data.type === 'kicked') {
+            showAlert(data.reason || 'You were kicked from the room.');
+            stopGame();
+            return;
+        }
+
+        if (data.type === 'host-ready') {
+            hostPlayerId = data.hostId || data.playerId || hostPlayerId;
+            currentRoomCode = data.roomCode || currentRoomCode;
+            currentJoinCode = data.joinCode || currentJoinCode;
+            sessionSecret = data.sessionSecret || sessionSecret;
+            maxPlayers = Number(data.maxPlayers) || maxPlayers;
+            if (Array.isArray(data.roster) && data.roster.length) {
+                roomPlayers = normalizeRoster(data.roster);
+            }
+            updateLobbyUI();
+            if (conn && conn.open) {
+                conn.send({
+                    type: 'join',
+                    playerId: localPlayerId,
+                    name: playerName,
+                    loadout: player.loadout,
+                    reconnect: false,
+                    sessionSecret
+                });
+            }
+            return;
+        }
+
+        if (data.type === 'welcome') {
+            clearInterval(joinRetryTimer);
+            joinRetryTimer = 0;
+            migrationInProgress = false;
+            hostPlayerId = data.hostId || data.playerId;
+            currentRoomCode = data.roomCode || currentRoomCode;
+            currentJoinCode = data.joinCode || currentJoinCode;
+            sessionSecret = data.sessionSecret || sessionSecret;
+            maxPlayers = Number(data.maxPlayers) || maxPlayers;
+            roomPlayers = normalizeRoster(data.roster || roomPlayers);
+            roomStarted = data.started === true;
+            roundScores = Array.isArray(data.scores) ? [Number(data.scores[0]) || 0, Number(data.scores[1]) || 0] : roundScores;
+            currentRound = Number(data.round) || currentRound;
+            roundOver = data.roundOver === true;
+            matchOver = data.matchOver === true;
+            roundWinnerTeam = Number.isFinite(Number(data.winnerTeam)) ? Number(data.winnerTeam) : roundWinnerTeam;
+            if (data.state) handleData(data.state);
+            saveRecentRoom();
+            updateLobbyUI();
+            connectionStatus.textContent = roomStarted ? 'Rejoining match...' : `Waiting for players ${roomPlayers.length}/${maxPlayers}.`;
+            if (roomStarted) startGame('pvp');
+            else {
+                hideMigrationOverlay();
+                showScreen('waiting');
+            }
+            return;
+        }
+
+        if (data.type === 'lobby') {
+            hostPlayerId = data.hostId || hostPlayerId;
+            sessionSecret = data.sessionSecret || sessionSecret;
+            maxPlayers = Number(data.maxPlayers) || maxPlayers;
+            roomPlayers = normalizeRoster(data.roster || roomPlayers);
+            roomStarted = data.started === true;
+            saveRecentRoom();
+            updateLobbyUI();
+            connectionStatus.textContent = roomStarted ? 'Game in progress.' : `Waiting for players ${roomPlayers.length}/${maxPlayers}.`;
+            if (!roomStarted) {
+                hideMigrationOverlay();
+                showScreen('waiting');
+            }
+            return;
+        }
+
+        if (data.type === 'start') {
+            hostPlayerId = data.hostId || hostPlayerId;
+            sessionSecret = data.sessionSecret || sessionSecret;
+            maxPlayers = Number(data.maxPlayers) || maxPlayers;
+            roomPlayers = normalizeRoster(data.roster || roomPlayers);
+            roundScores = Array.isArray(data.scores) ? [Number(data.scores[0]) || 0, Number(data.scores[1]) || 0] : [0, 0];
+            currentRound = Number(data.round) || 1;
+            roundOver = false;
+            matchOver = false;
+            roomStarted = true;
+            saveRecentRoom();
+            startGame('pvp');
+            return;
+        }
+
+        if (data.type === 'round-result') {
+            hostPlayerId = data.hostId || hostPlayerId;
+            sessionSecret = data.sessionSecret || sessionSecret;
+            maxPlayers = Number(data.maxPlayers) || maxPlayers;
+            roomPlayers = normalizeRoster(data.roster || roomPlayers);
+            currentRound = Number(data.round) || currentRound;
+            finishRound(data.winnerTeam, data.scores);
+            matchOver = data.matchOver === true;
+            updateRoundHud();
+            showRoundOverlay();
+            return;
+        }
+
+        if (data.type === 'round-start') {
+            hostPlayerId = data.hostId || hostPlayerId;
+            sessionSecret = data.sessionSecret || sessionSecret;
+            maxPlayers = Number(data.maxPlayers) || maxPlayers;
+            roomPlayers = normalizeRoster(data.roster || roomPlayers);
+            roundScores = Array.isArray(data.scores) ? [Number(data.scores[0]) || 0, Number(data.scores[1]) || 0] : roundScores;
+            currentRound = Number(data.round) || currentRound;
+            startRound();
+            return;
+        }
+
+        if (data.type === 'player-left') {
+            roomPlayers = normalizeRoster(data.roster || roomPlayers.filter(entry => entry.id !== data.id));
+            removeRemotePlayer(data.id, true);
+            updateLobbyUI();
+            return;
+        }
 
         if (data.type === 'hello') {
             opponentName = data.name || 'Opponent';
-            remotePlayer.name = opponentName;
-            applyRemoteSnapshot(data, true);
+            applyRemoteSnapshot({ ...data, playerId: data.playerId || 'legacy-remote' }, true);
             sendData(playerSnapshot('hello-reply', { name: playerName }));
             showAlert(`${opponentName} joined.`);
             return;
@@ -918,8 +2041,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (data.type === 'hello-reply') {
             opponentName = data.name || 'Opponent';
-            remotePlayer.name = opponentName;
-            applyRemoteSnapshot(data, true);
+            applyRemoteSnapshot({ ...data, playerId: data.playerId || 'legacy-remote' }, true);
             showAlert(`${opponentName} joined.`);
             return;
         }
@@ -930,79 +2052,106 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (data.type === 'shot') {
-            applyRemoteSnapshot(data, false);
-            spawnWeaponBullets(remotePlayer, Number(data.angle) || remotePlayer.aimAngle, true, data.id, data.angles, finiteNumber(data.damageMultiplier, 1));
+            const entity = applyRemoteSnapshot(data, false);
+            if (entity) spawnWeaponBullets(entity, Number(data.angle) || entity.aimAngle, true, data.id, data.angles, finiteNumber(data.damageMultiplier, 1));
             return;
         }
 
         if (data.type === 'ability') {
-            applyRemoteSnapshot(data, false);
+            const entity = applyRemoteSnapshot(data, false);
             if (data.ability === 'grenade') {
                 spawnGrenade(
-                    finiteNumber(data.x, remotePlayer.x),
-                    finiteNumber(data.y, remotePlayer.y),
-                    finiteNumber(data.targetX, remotePlayer.x),
-                    finiteNumber(data.targetY, remotePlayer.y),
+                    finiteNumber(data.x, entity ? entity.x : 0),
+                    finiteNumber(data.y, entity ? entity.y : 0),
+                    finiteNumber(data.targetX, entity ? entity.x : 0),
+                    finiteNumber(data.targetY, entity ? entity.y : 0),
                     true,
-                    data.id || ''
+                    data.id || '',
+                    data.playerId || ''
                 );
             }
             return;
         }
 
         if (data.type === 'hit') {
+            const entity = getOrCreateRemotePlayer(data.playerId, data.name);
+            if (!entity) return;
             if (typeof data.hp === 'number') {
-                remotePlayer.hp = data.hp;
+                entity.hp = data.hp;
             } else {
-                applyDamage(remotePlayer, Number(data.damage) || 12);
+                applyDamage(entity, Number(data.damage) || 12);
             }
-            remotePlayer.shield = typeof data.shield === 'number' ? clamp(data.shield, 0, SHIELD_MAX) : remotePlayer.shield;
-            remotePlayer.invisibleTimer = typeof data.invisibleTimer === 'number' ? clamp(data.invisibleTimer, 0, INVIS_DURATION) : remotePlayer.invisibleTimer;
+            entity.shield = typeof data.shield === 'number' ? clamp(data.shield, 0, SHIELD_MAX) : entity.shield;
+            entity.invisibleTimer = typeof data.invisibleTimer === 'number' ? clamp(data.invisibleTimer, 0, INVIS_DURATION) : entity.invisibleTimer;
+            entity.alive = data.alive !== false && entity.hp > 0;
+            if (isLocalHost()) checkRoundWinner();
+            return;
+        }
+
+        if (data.type === 'damage') {
+            if (data.targetId === localPlayerId && canDamagePlayer(data.playerId, localPlayerId)) {
+                applyLocalDamage(Number(data.damage) || 0, data.hitId || '');
+            }
+            return;
         }
     }
 
     function applyRemoteSnapshot(data, snap) {
-        const nextX = finiteNumber(data.x, remotePlayer.x);
-        const nextY = finiteNumber(data.y, remotePlayer.y);
-        const nextAimAngle = finiteNumber(data.aimAngle, remotePlayer.targetAimAngle);
+        const entity = getOrCreateRemotePlayer(data.playerId, data.name);
+        if (!entity) return null;
+        const nextX = finiteNumber(data.x, entity.x);
+        const nextY = finiteNumber(data.y, entity.y);
+        const nextAimAngle = finiteNumber(data.aimAngle, entity.targetAimAngle);
 
         if (data.loadout) {
-            applyPlayerLoadout(remotePlayer, data.loadout, false);
+            applyPlayerLoadout(entity, data.loadout, false);
         }
-        remotePlayer.x = nextX;
-        remotePlayer.y = nextY;
-        remotePlayer.targetAimAngle = nextAimAngle;
-        remotePlayer.hp = typeof data.hp === 'number' ? data.hp : remotePlayer.hp;
-        remotePlayer.shield = typeof data.shield === 'number' ? clamp(data.shield, 0, SHIELD_MAX) : remotePlayer.shield;
-        remotePlayer.maxShield = typeof data.maxShield === 'number' ? clamp(data.maxShield, 0, SHIELD_MAX) : remotePlayer.maxShield;
-        remotePlayer.ammo = typeof data.ammo === 'number' ? data.ammo : remotePlayer.ammo;
-        remotePlayer.maxAmmo = typeof data.maxAmmo === 'number' ? data.maxAmmo : remotePlayer.maxAmmo;
-        remotePlayer.reloading = Boolean(data.reloading);
-        remotePlayer.reloadProgress = typeof data.reloadProgress === 'number' ? clamp(data.reloadProgress, 0, 1) : remotePlayer.reloadProgress;
-        remotePlayer.abilityCooldown = typeof data.abilityCooldown === 'number' ? clamp(data.abilityCooldown, 0, getAbility(remotePlayer.loadout.ability).cooldown) : remotePlayer.abilityCooldown;
-        remotePlayer.dashTimer = typeof data.dashTimer === 'number' ? clamp(data.dashTimer, 0, DASH_DURATION) : remotePlayer.dashTimer;
-        remotePlayer.dashAngle = typeof data.dashAngle === 'number' ? data.dashAngle : remotePlayer.dashAngle;
-        remotePlayer.invisibleTimer = typeof data.invisibleTimer === 'number' ? clamp(data.invisibleTimer, 0, INVIS_DURATION) : remotePlayer.invisibleTimer;
-        remotePlayer.oneShotArmed = data.oneShotArmed === true;
-        remotePlayer.oneShotReloadPending = data.oneShotReloadPending === true;
-        remotePlayer.alive = data.alive !== false;
-        remotePlayer.lastSeen = performance.now();
+        entity.x = nextX;
+        entity.y = nextY;
+        entity.targetAimAngle = nextAimAngle;
+        entity.hp = typeof data.hp === 'number' ? data.hp : entity.hp;
+        entity.shield = typeof data.shield === 'number' ? clamp(data.shield, 0, SHIELD_MAX) : entity.shield;
+        entity.maxShield = typeof data.maxShield === 'number' ? clamp(data.maxShield, 0, SHIELD_MAX) : entity.maxShield;
+        entity.ammo = typeof data.ammo === 'number' ? data.ammo : entity.ammo;
+        entity.maxAmmo = typeof data.maxAmmo === 'number' ? data.maxAmmo : entity.maxAmmo;
+        entity.reloading = Boolean(data.reloading);
+        entity.reloadProgress = typeof data.reloadProgress === 'number' ? clamp(data.reloadProgress, 0, 1) : entity.reloadProgress;
+        entity.abilityCooldown = typeof data.abilityCooldown === 'number' ? clamp(data.abilityCooldown, 0, getAbility(entity.loadout.ability).cooldown) : entity.abilityCooldown;
+        entity.dashTimer = typeof data.dashTimer === 'number' ? clamp(data.dashTimer, 0, DASH_DURATION) : entity.dashTimer;
+        entity.dashAngle = typeof data.dashAngle === 'number' ? data.dashAngle : entity.dashAngle;
+        entity.invisibleTimer = typeof data.invisibleTimer === 'number' ? clamp(data.invisibleTimer, 0, INVIS_DURATION) : entity.invisibleTimer;
+        entity.oneShotArmed = data.oneShotArmed === true;
+        entity.oneShotReloadPending = data.oneShotReloadPending === true;
+        entity.alive = data.alive !== false;
+        entity.lastSeen = performance.now();
 
         if (snap) {
-            remotePlayer.visualX = nextX;
-            remotePlayer.visualY = nextY;
-            remotePlayer.aimAngle = nextAimAngle;
+            entity.visualX = nextX;
+            entity.visualY = nextY;
+            entity.aimAngle = nextAimAngle;
         }
+        return entity;
     }
 
-    function startGame(mode) {
+    function startGame(mode, options = {}) {
         updateAccessGates();
         if (playBlocked()) return;
         setPlayerName();
         gameMode = mode;
         score = 0;
-        resetPlayers();
+        if (mode === 'pvp' && options.preserveState !== true) {
+            startRound({ announce: options.announceRound !== false });
+            scheduleViewportResize();
+            if (!running) {
+                running = true;
+                lastFrame = performance.now();
+                animationId = requestAnimationFrame(loop);
+            }
+            return;
+        }
+        resetPlayers(options.preserveState === true);
         showScreen('game');
+        hideMigrationOverlay();
         scheduleViewportResize();
         if (!running) {
             running = true;
@@ -1015,20 +2164,34 @@ document.addEventListener('DOMContentLoaded', () => {
         running = false;
         cancelAnimationFrame(animationId);
         resetInput();
+        roomStarted = false;
+        migrationInProgress = false;
+        resetMatchState();
+        clearMigrationRestartTimer();
+        hideMigrationOverlay();
         cleanupPeer();
         resetConnectionUI();
         showScreen('start');
     }
 
-    function resetPlayers() {
-        const localSpawnX = networkRole === 'guest' ? world.width * 0.68 : world.width * 0.32;
-        const remoteSpawnX = networkRole === 'guest' ? world.width * 0.32 : world.width * 0.68;
-        Object.assign(player, createPlayer('local', localSpawnX, world.height * 0.5, colors.local, selectedLoadout), { name: playerName });
-        Object.assign(remotePlayer, createPlayer('remote', remoteSpawnX, world.height * 0.5, colors.remote, DEFAULT_LOADOUT), { name: opponentName });
-        bullets.length = 0;
-        grenades.length = 0;
-        impacts.length = 0;
-        dummies.forEach(dummy => dummy.hp = dummy.maxHp);
+    function resetPlayers(preserveState = false) {
+        if (!roomPlayers.some(entry => entry.id === localPlayerId)) {
+            roomPlayers.unshift({ id: localPlayerId, name: playerName, connected: true, host: networkRole === 'host' });
+            normalizeRoster();
+        }
+        if (!preserveState) {
+            const localSpawn = gameMode === 'pvp' ? getSpawnPoint(localPlayerId) : { x: world.width * 0.34, y: world.height * 0.5 };
+            Object.assign(player, createPlayer('local', localSpawn.x, localSpawn.y, colors.local, selectedLoadout), { name: playerName, playerId: localPlayerId });
+            remotePlayers.clear();
+            roomPlayers.forEach(entry => {
+                if (entry.id !== localPlayerId) getOrCreateRemotePlayer(entry.id, entry.name);
+            });
+            bullets.length = 0;
+            grenades.length = 0;
+            impacts.length = 0;
+            processedHitIds.clear();
+            dummies.forEach(dummy => dummy.hp = dummy.maxHp);
+        }
         updateAbilityButtonArt();
         updateHud();
     }
@@ -1083,6 +2246,7 @@ document.addEventListener('DOMContentLoaded', () => {
             sendData(playerSnapshot());
             lastNetworkSend = now;
         }
+        checkRoundWinner();
     }
 
     function updatePlayer(dt) {
@@ -1091,6 +2255,11 @@ document.addEventListener('DOMContentLoaded', () => {
         player.invuln = Math.max(0, player.invuln - dt);
         updateAbilityTimers(player, dt);
         updateReload(player, dt);
+        if (gameMode === 'pvp' && (player.alive === false || player.hp <= 0 || roundOver)) {
+            player.vx = 0;
+            player.vy = 0;
+            return;
+        }
 
         if (player.dashTimer > 0) {
             const dashSpeed = DASH_DISTANCE / DASH_DURATION;
@@ -1135,6 +2304,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return player.aimAngle;
     }
 
+    function canLocalAct() {
+        return gameMode !== 'pvp' || (roundActive && !roundOver && player.alive !== false && player.hp > 0);
+    }
+
     function applyDamage(entity, amount) {
         let remaining = Math.max(0, Number(amount) || 0);
         if (entity.shield > 0) {
@@ -1147,8 +2320,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function applyLocalDamage(amount, hitId = '') {
+        if (!roundActive || roundOver || player.alive === false) return false;
+        if (markHitProcessed(hitId)) return false;
+        applyDamage(player, amount);
+        player.invisibleTimer = 0;
+        if (player.hp <= 0) {
+            eliminateLocalPlayer();
+            return true;
+        }
+        sendData({
+            type: 'hit',
+            damage: amount,
+            hp: player.hp,
+            shield: player.shield,
+            invisibleTimer: player.invisibleTimer,
+            alive: player.alive,
+            hitId
+        });
+        return true;
+    }
+
     function activateDash() {
-        if (player.hp <= 0 || player.abilityCooldown > 0 || player.dashTimer > 0) return;
+        if (!canLocalAct() || player.hp <= 0 || player.abilityCooldown > 0 || player.dashTimer > 0) return;
         const angle = getDashAngle();
         player.dashAngle = angle;
         player.dashTimer = DASH_DURATION;
@@ -1163,6 +2357,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function activateInvisibility() {
+        if (!canLocalAct()) return;
         if (!canUseAbility()) return;
         player.invisibleTimer = INVIS_DURATION;
         player.invisibleDuration = INVIS_DURATION;
@@ -1175,6 +2370,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function activateOneShot() {
+        if (!canLocalAct()) return;
         if (!canUseAbility() || player.oneShotArmed || player.oneShotReloadPending) return;
         player.oneShotArmed = true;
         player.oneShotReloadPending = false;
@@ -1192,6 +2388,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function activateShieldUp() {
+        if (!canLocalAct()) return;
         if (!canUseAbility()) return;
         player.shield = clamp((player.shield || 0) + SHIELD_UP_AMOUNT, 0, SHIELD_MAX);
         player.maxShield = SHIELD_MAX;
@@ -1213,6 +2410,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function beginAbilityDrag(event) {
+        if (!canLocalAct()) return;
         if (!canUseAbility()) return;
         const ability = getAbility(player.loadout.ability);
         if (ability.id === 'dash') {
@@ -1313,6 +2511,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function throwGrenade(targetX, targetY) {
+        if (!canLocalAct()) return;
         const ability = getAbility(player.loadout.ability);
         if (ability.id !== 'grenade') return;
         const target = clampGrenadeTarget(player.x, player.y, targetX, targetY);
@@ -1321,7 +2520,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const angle = Math.atan2(target.y - player.y, target.x - player.x);
         player.aimAngle = angle;
         const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-        spawnGrenade(player.x, player.y, target.x, target.y, false, id);
+        spawnGrenade(player.x, player.y, target.x, target.y, false, id, localPlayerId);
         updateHud();
         sendData(playerSnapshot('ability', {
             ability: 'grenade',
@@ -1331,7 +2530,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }));
     }
 
-    function spawnGrenade(startX, startY, targetX, targetY, remote = false, id = '') {
+    function spawnGrenade(startX, startY, targetX, targetY, remote = false, id = '', ownerId = '') {
         const target = clampGrenadeTarget(startX, startY, targetX, targetY);
         const dx = target.x - startX;
         const dy = target.y - startY;
@@ -1352,6 +2551,7 @@ document.addEventListener('DOMContentLoaded', () => {
             scale: 0.78,
             radius: GRENADE_RADIUS,
             damage: GRENADE_DAMAGE,
+            ownerId,
             remote,
             color: remote ? colors.enemyBullet : colors.local
         });
@@ -1441,23 +2641,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateRemotePlayer(dt) {
         if (gameMode !== 'pvp') return;
-        updateRemoteReload(remotePlayer, dt);
-        updateAbilityTimers(remotePlayer, dt);
+        remotePlayers.forEach(entity => {
+            updateRemoteReload(entity, dt);
+            updateAbilityTimers(entity, dt);
 
-        const dx = remotePlayer.x - remotePlayer.visualX;
-        const dy = remotePlayer.y - remotePlayer.visualY;
-        const dist = Math.hypot(dx, dy);
+            const dx = entity.x - entity.visualX;
+            const dy = entity.y - entity.visualY;
+            const dist = Math.hypot(dx, dy);
 
-        if (dist > REMOTE_SNAP_DISTANCE) {
-            remotePlayer.visualX = remotePlayer.x;
-            remotePlayer.visualY = remotePlayer.y;
-        } else {
-            const t = lerpFactor(REMOTE_POSITION_LERP, dt);
-            remotePlayer.visualX = lerp(remotePlayer.visualX, remotePlayer.x, t);
-            remotePlayer.visualY = lerp(remotePlayer.visualY, remotePlayer.y, t);
-        }
+            if (dist > REMOTE_SNAP_DISTANCE) {
+                entity.visualX = entity.x;
+                entity.visualY = entity.y;
+            } else {
+                const t = lerpFactor(REMOTE_POSITION_LERP, dt);
+                entity.visualX = lerp(entity.visualX, entity.x, t);
+                entity.visualY = lerp(entity.visualY, entity.y, t);
+            }
 
-        remotePlayer.aimAngle = lerpAngle(remotePlayer.aimAngle, remotePlayer.targetAimAngle, lerpFactor(REMOTE_AIM_LERP, dt));
+            entity.aimAngle = lerpAngle(entity.aimAngle, entity.targetAimAngle, lerpFactor(REMOTE_AIM_LERP, dt));
+        });
     }
 
     function updateRemoteReload(entity, dt) {
@@ -1540,15 +2742,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            if (gameMode === 'pvp' && bullet.remote === true && distance(bullet, player) < bullet.r + player.r && player.invuln <= 0) {
-                applyDamage(player, bullet.damage);
-                player.invisibleTimer = 0;
-                sendData({ type: 'hit', damage: bullet.damage, hp: player.hp, shield: player.shield, invisibleTimer: player.invisibleTimer });
+            if (gameMode === 'pvp' && !bullet.remote && hitRemotePlayerWithLocalBullet(bullet)) {
+                bullets.splice(i, 1);
+                continue;
+            }
+
+            if (gameMode === 'pvp' && isEnemyProjectile(bullet) && distance(bullet, player) < bullet.r + player.r && player.invuln <= 0) {
+                applyLocalDamage(bullet.damage, bullet.id);
                 addImpact(bullet.x, bullet.y, colors.enemyBullet);
                 bullets.splice(i, 1);
-                if (player.hp <= 0) respawnPlayer(player);
             }
         }
+    }
+
+    function hitRemotePlayerWithLocalBullet(bullet) {
+        for (const [targetId, entity] of remotePlayers.entries()) {
+            if (!targetId || targetId === localPlayerId || entity.hp <= 0 || entity.alive === false) continue;
+            if (!canDamagePlayer(localPlayerId, targetId)) continue;
+            const targetPoint = {
+                x: finiteNumber(entity.visualX, entity.x),
+                y: finiteNumber(entity.visualY, entity.y)
+            };
+            if (distance(bullet, targetPoint) >= bullet.r + entity.r) continue;
+            const hitId = bullet.id || `bullet-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+            sendData({
+                type: 'damage',
+                targetId,
+                damage: bullet.damage,
+                hitId,
+                sourceType: 'bullet'
+            });
+            addImpact(bullet.x, bullet.y, colors.bullet);
+            return true;
+        }
+        return false;
     }
 
     function updateGrenades(dt) {
@@ -1588,12 +2815,30 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        if (gameMode === 'pvp' && grenade.remote && player.invuln <= 0 && Math.hypot(player.x - grenade.endX, player.y - grenade.endY) <= grenade.radius + player.r) {
-            applyDamage(player, grenade.damage);
-            player.invisibleTimer = 0;
+        if (gameMode === 'pvp' && !grenade.remote) {
+            hitRemotePlayersWithLocalGrenade(grenade);
+        }
+
+        if (gameMode === 'pvp' && isEnemyProjectile(grenade) && player.invuln <= 0 && Math.hypot(player.x - grenade.endX, player.y - grenade.endY) <= grenade.radius + player.r) {
+            applyLocalDamage(grenade.damage, `${grenade.id || 'grenade'}-${localPlayerId}`);
             player.invuln = 0.45;
-            sendData({ type: 'hit', damage: grenade.damage, hp: player.hp, shield: player.shield, invisibleTimer: player.invisibleTimer });
-            if (player.hp <= 0) respawnPlayer(player);
+        }
+    }
+
+    function hitRemotePlayersWithLocalGrenade(grenade) {
+        for (const [targetId, entity] of remotePlayers.entries()) {
+            if (!targetId || targetId === localPlayerId || entity.hp <= 0 || entity.alive === false) continue;
+            if (!canDamagePlayer(localPlayerId, targetId)) continue;
+            const x = finiteNumber(entity.visualX, entity.x);
+            const y = finiteNumber(entity.visualY, entity.y);
+            if (Math.hypot(x - grenade.endX, y - grenade.endY) > grenade.radius + entity.r) continue;
+            sendData({
+                type: 'damage',
+                targetId,
+                damage: grenade.damage,
+                hitId: `${grenade.id || 'grenade'}-${targetId}`,
+                sourceType: 'grenade'
+            });
         }
     }
 
@@ -1613,7 +2858,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function fire(angle = player.aimAngle) {
-        if (player.cooldown > 0 || player.hp <= 0 || (player.reloading && !usesAutoReload(player))) return;
+        if (!canLocalAct() || player.cooldown > 0 || player.hp <= 0 || (player.reloading && !usesAutoReload(player))) return;
         if (player.ammo <= 0) {
             startReload(player);
             return;
@@ -1676,21 +2921,10 @@ document.addEventListener('DOMContentLoaded', () => {
             life: weapon.bulletLife,
             damage: weapon.damage * Math.max(1, damageMultiplier),
             weapon: weapon.id,
+            ownerId: owner.playerId || (owner.id === 'local' ? localPlayerId : owner.id),
             remote,
             color: remote ? colors.enemyBullet : colors.bullet
         });
-    }
-
-    function respawnPlayer(target) {
-        clearOneShot(target, true);
-        target.hp = target.maxHp;
-        target.shield = 0;
-        target.invuln = 1.1;
-        target.invisibleTimer = 0;
-        target.x = networkRole === 'guest' ? world.width * 0.68 : world.width * 0.32;
-        target.y = world.height * 0.5;
-        target.visualX = target.x;
-        target.visualY = target.y;
     }
 
     function updateHud() {
@@ -1706,7 +2940,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const abilityActive = ability.id === 'invis' && player.invisibleTimer > 0;
         const abilityPassive = ability.mode === 'passive';
         const abilityLocked = abilityPassive || abilityActive || player.abilityCooldown > 0 || player.oneShotArmed || player.oneShotReloadPending;
-        abilityBtn.disabled = abilityLocked || player.hp <= 0;
+        const eliminated = gameMode === 'pvp' && (player.alive === false || player.hp <= 0 || roundOver);
+        reloadBtn.disabled = reloadBtn.disabled || eliminated;
+        abilityBtn.disabled = abilityLocked || player.hp <= 0 || eliminated;
         abilityCooldown.textContent = abilityActive
             ? Math.ceil(player.invisibleTimer).toString()
             : player.abilityCooldown > 0
@@ -1727,7 +2963,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         drawArena(camera);
         drawDummies();
-        drawPlayer(remotePlayer, true);
+        remotePlayers.forEach(entity => drawPlayer(entity, true));
         drawPlayer(player, false);
         drawBullets();
         drawGrenades();
@@ -1752,6 +2988,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getCameraZoom() {
+        if (gameMode === 'pvp' && (player.alive === false || player.hp <= 0 || roundOver)) {
+            return Math.max(0.1, Math.min(canvas.clientWidth / world.width, canvas.clientHeight / world.height) * 0.96);
+        }
         const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
         const landscapePhone = window.innerWidth > window.innerHeight && window.innerHeight <= 540;
         return coarsePointer || landscapePhone ? MOBILE_CAMERA_ZOOM : 1;
@@ -1833,7 +3072,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.globalAlpha = 0.38;
         }
 
-        const sprite = loadSprite(getPlayerSpritePath(entity, isRemote ? 'bad' : 'good'));
+        const team = gameMode === 'pvp' && getPlayerTeam(entity.playerId || localPlayerId) !== getPlayerTeam(localPlayerId) ? 'bad' : 'good';
+        const sprite = loadSprite(getPlayerSpritePath(entity, team));
         if (spriteReady(sprite)) {
             ctx.drawImage(sprite, -PLAYER_SPRITE_SIZE / 2, -PLAYER_SPRITE_SIZE / 2, PLAYER_SPRITE_SIZE, PLAYER_SPRITE_SIZE);
         } else {
@@ -1856,6 +3096,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         drawHealthBar(drawX - 32, drawY - 48, 64, 8, entity);
         drawAmmoBar(drawX - 32, drawY - 36, 64, 7, entity);
+        drawNameTag(drawX, drawY - 62, entity, isRemote);
+    }
+
+    function drawNameTag(x, y, entity, isRemote) {
+        const label = isRemote ? entity.name || 'Player' : playerName;
+        if (!label) return;
+        ctx.save();
+        ctx.font = '800 13px Inter, system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const width = Math.min(92, ctx.measureText(label).width + 16);
+        ctx.fillStyle = 'rgba(5, 7, 11, 0.62)';
+        roundRect(ctx, x - width / 2, y - 9, width, 18, 7);
+        ctx.fill();
+        ctx.fillStyle = getPlayerTeam(entity.playerId || localPlayerId) === 0 ? '#b7ffd2' : '#c9d8ff';
+        ctx.fillText(label.slice(0, 14), x, y);
+        ctx.restore();
     }
 
     function getPlayerSpritePath(entity, team) {
@@ -2197,28 +3454,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     ability: player.loadout.ability,
                     loadout: player.loadout
                 },
-                remote: {
-                    x: remotePlayer.visualX,
-                    y: remotePlayer.visualY,
-                    targetX: remotePlayer.x,
-                    targetY: remotePlayer.y,
-                    hp: remotePlayer.hp,
-                    shield: remotePlayer.shield,
-                    aimAngle: remotePlayer.aimAngle,
-                    ammo: remotePlayer.ammo,
-                    maxAmmo: remotePlayer.maxAmmo,
-                    reloading: remotePlayer.reloading,
-                    reloadProgress: remotePlayer.reloadProgress,
-                    reloadDuration: getActiveReloadDuration(remotePlayer),
-                    abilityCooldown: remotePlayer.abilityCooldown,
-                    dashTimer: remotePlayer.dashTimer,
-                    dashAngle: remotePlayer.dashAngle,
-                    invisibleTimer: remotePlayer.invisibleTimer,
-                    oneShotArmed: remotePlayer.oneShotArmed,
-                    oneShotReloadPending: remotePlayer.oneShotReloadPending,
-                    ability: remotePlayer.loadout.ability,
-                    loadout: remotePlayer.loadout
-                },
+                remotes: Array.from(remotePlayers.entries()).map(([id, entity]) => ({
+                    id,
+                    x: entity.visualX,
+                    y: entity.visualY,
+                    targetX: entity.x,
+                    targetY: entity.y,
+                    hp: entity.hp,
+                    shield: entity.shield,
+                    aimAngle: entity.aimAngle,
+                    ammo: entity.ammo,
+                    maxAmmo: entity.maxAmmo,
+                    reloading: entity.reloading,
+                    reloadProgress: entity.reloadProgress,
+                    reloadDuration: getActiveReloadDuration(entity),
+                    abilityCooldown: entity.abilityCooldown,
+                    dashTimer: entity.dashTimer,
+                    dashAngle: entity.dashAngle,
+                    invisibleTimer: entity.invisibleTimer,
+                    oneShotArmed: entity.oneShotArmed,
+                    oneShotReloadPending: entity.oneShotReloadPending,
+                    ability: entity.loadout.ability,
+                    loadout: entity.loadout
+                })),
+                roster: roomPlayers,
+                hostId: hostPlayerId,
                 selectedLoadout,
                 bullets: bullets.length,
                 grenades: grenades.length,
@@ -2295,6 +3555,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     startConnectBtn.addEventListener('click', () => {
         setPlayerName();
+        updateQuickJoinUI();
+        updateLobbyUI();
         showScreen('connect');
         roomCodeInput.focus();
     });
@@ -2340,13 +3602,62 @@ document.addEventListener('DOMContentLoaded', () => {
         initializeHost(roomCode);
     });
 
+    playerCountButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            playerCountButtons.forEach(option => {
+                const selected = option === button;
+                option.classList.toggle('selected', selected);
+                option.setAttribute('aria-pressed', selected ? 'true' : 'false');
+            });
+            maxPlayers = getSelectedMaxPlayers();
+            updateLobbyUI();
+        });
+    });
+
+    roomMaxButtons.forEach(button => {
+        button.addEventListener('click', () => setRoomMaxPlayers(button.dataset.roomMax));
+    });
+
+    [waitingRoomList, gameSettingsList].forEach(list => {
+        list.addEventListener('click', event => {
+            const teamButton = event.target.closest('[data-team-target]');
+            if (teamButton) {
+                setRoomPlayerTeam(teamButton.dataset.teamTarget, teamButton.dataset.nextTeam);
+                return;
+            }
+            const kickButton = event.target.closest('[data-kick-target]');
+            if (kickButton) kickRoomPlayer(kickButton.dataset.kickTarget);
+        });
+    });
+
+    manualStartBtn.addEventListener('click', () => {
+        if (!isLocalHost()) return;
+        startNetworkMatch();
+    });
+
+    [waitingCopyCodeBtn, gameCopyCodeBtn, settingsCopyCodeBtn].forEach(button => {
+        button.addEventListener('click', copyRoomCode);
+    });
+
+    const leaveWaitingRoom = () => leaveCurrentRoom(true);
+    leaveWaitingBtn.addEventListener('click', leaveWaitingRoom);
+    waitingLeaveBtn.addEventListener('click', leaveWaitingRoom);
+
     joinGameBtn.addEventListener('click', () => {
         const roomCode = roomCodeInput.value.trim();
-        if (roomCode.length !== 6) {
-            showAlert('Code must be 6 digits.');
+        if (!/^[a-z0-9]{3,16}$/i.test(roomCode)) {
+            showAlert('Enter a valid room code.');
             return;
         }
         initializeJoin(roomCode);
+    });
+
+    quickJoinBtn.addEventListener('click', () => {
+        const recent = loadRecentRoom();
+        if (!recent) return;
+        setPlayerName();
+        const joinCode = recent.joinCode || recent.roomCode || recent.sessionSecret;
+        initializeJoin(joinCode, { publicCode: recent.roomCode, reconnect: true });
     });
 
     copyCodeBtn.addEventListener('click', () => {
@@ -2361,14 +3672,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     roomCodeInput.addEventListener('input', () => {
-        roomCodeInput.value = roomCodeInput.value.replace(/\D/g, '').slice(0, 6);
+        roomCodeInput.value = roomCodeInput.value.replace(/[^a-z0-9]/gi, '').slice(0, 16);
     });
 
     roomCodeInput.addEventListener('keydown', event => {
         if (event.key === 'Enter') joinGameBtn.click();
     });
 
-    exitGameBtn.addEventListener('click', stopGame);
+    gameMenuBtn.addEventListener('click', () => openGameMenu('menu'));
+    closeGameMenuBtn.addEventListener('click', closeGameMenu);
+    gameSettingsBtn.addEventListener('click', () => openGameMenu('settings'));
+    closeGameSettingsBtn.addEventListener('click', () => openGameMenu('menu'));
+    gameLeaveBtn.addEventListener('click', () => leaveCurrentRoom(false));
+    confirmHostLeaveBtn.addEventListener('click', () => leaveCurrentRoom(true));
+    cancelHostLeaveBtn.addEventListener('click', () => openGameMenu('menu'));
+    roundActionBtn.addEventListener('click', hostAdvanceRound);
+    gameMenuOverlay.addEventListener('click', event => {
+        if (event.target === gameMenuOverlay) closeGameMenu();
+    });
     reloadBtn.addEventListener('pointerdown', event => {
         event.preventDefault();
         tryManualReload();
@@ -2427,6 +3748,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateLoadoutUI();
     updateBuilderUI();
     updateSettingsUI();
+    updateQuickJoinUI();
     showScreen('start');
     updateAccessGates();
 });

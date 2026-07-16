@@ -1,0 +1,396 @@
+{
+  "source": "/Users/ikeyfranco/Desktop/font_alphabet_source.png",
+  "count": 26,
+  "letters": [
+    {
+      "letter": "A",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/A.png",
+      "bbox": [
+        6,
+        4,
+        178,
+        196
+      ],
+      "size": [
+        172,
+        192
+      ],
+      "area": 24743
+    },
+    {
+      "letter": "B",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/B.png",
+      "bbox": [
+        222,
+        3,
+        373,
+        197
+      ],
+      "size": [
+        151,
+        194
+      ],
+      "area": 26163
+    },
+    {
+      "letter": "C",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/C.png",
+      "bbox": [
+        414,
+        1,
+        569,
+        197
+      ],
+      "size": [
+        155,
+        196
+      ],
+      "area": 22218
+    },
+    {
+      "letter": "D",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/D.png",
+      "bbox": [
+        622,
+        3,
+        779,
+        197
+      ],
+      "size": [
+        157,
+        194
+      ],
+      "area": 26116
+    },
+    {
+      "letter": "E",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/E.png",
+      "bbox": [
+        824,
+        4,
+        958,
+        196
+      ],
+      "size": [
+        134,
+        192
+      ],
+      "area": 24309
+    },
+    {
+      "letter": "F",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/F.png",
+      "bbox": [
+        1016,
+        3,
+        1147,
+        195
+      ],
+      "size": [
+        131,
+        192
+      ],
+      "area": 20483
+    },
+    {
+      "letter": "G",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/G.png",
+      "bbox": [
+        1191,
+        1,
+        1352,
+        197
+      ],
+      "size": [
+        161,
+        196
+      ],
+      "area": 26345
+    },
+    {
+      "letter": "H",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/H.png",
+      "bbox": [
+        8,
+        250,
+        163,
+        439
+      ],
+      "size": [
+        155,
+        189
+      ],
+      "area": 27563
+    },
+    {
+      "letter": "I",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/I.png",
+      "bbox": [
+        229,
+        250,
+        306,
+        439
+      ],
+      "size": [
+        77,
+        189
+      ],
+      "area": 13946
+    },
+    {
+      "letter": "J",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/J.png",
+      "bbox": [
+        387,
+        250,
+        523,
+        442
+      ],
+      "size": [
+        136,
+        192
+      ],
+      "area": 17270
+    },
+    {
+      "letter": "K",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/K.png",
+      "bbox": [
+        592,
+        249,
+        758,
+        439
+      ],
+      "size": [
+        166,
+        190
+      ],
+      "area": 26660
+    },
+    {
+      "letter": "L",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/L.png",
+      "bbox": [
+        803,
+        250,
+        930,
+        439
+      ],
+      "size": [
+        127,
+        189
+      ],
+      "area": 17324
+    },
+    {
+      "letter": "M",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/M.png",
+      "bbox": [
+        970,
+        249,
+        1168,
+        439
+      ],
+      "size": [
+        198,
+        190
+      ],
+      "area": 33381
+    },
+    {
+      "letter": "N",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/N.png",
+      "bbox": [
+        1209,
+        250,
+        1366,
+        439
+      ],
+      "size": [
+        157,
+        189
+      ],
+      "area": 28403
+    },
+    {
+      "letter": "O",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/O.png",
+      "bbox": [
+        1,
+        488,
+        173,
+        683
+      ],
+      "size": [
+        172,
+        195
+      ],
+      "area": 26021
+    },
+    {
+      "letter": "P",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/P.png",
+      "bbox": [
+        224,
+        490,
+        371,
+        680
+      ],
+      "size": [
+        147,
+        190
+      ],
+      "area": 22069
+    },
+    {
+      "letter": "Q",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/Q.png",
+      "bbox": [
+        411,
+        488,
+        585,
+        695
+      ],
+      "size": [
+        174,
+        207
+      ],
+      "area": 28138
+    },
+    {
+      "letter": "R",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/R.png",
+      "bbox": [
+        636,
+        490,
+        786,
+        680
+      ],
+      "size": [
+        150,
+        190
+      ],
+      "area": 25239
+    },
+    {
+      "letter": "S",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/S.png",
+      "bbox": [
+        828,
+        488,
+        972,
+        683
+      ],
+      "size": [
+        144,
+        195
+      ],
+      "area": 23231
+    },
+    {
+      "letter": "T",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/T.png",
+      "bbox": [
+        1015,
+        491,
+        1168,
+        679
+      ],
+      "size": [
+        153,
+        188
+      ],
+      "area": 19222
+    },
+    {
+      "letter": "U",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/U.png",
+      "bbox": [
+        1209,
+        491,
+        1363,
+        683
+      ],
+      "size": [
+        154,
+        192
+      ],
+      "area": 25891
+    },
+    {
+      "letter": "V",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/V.png",
+      "bbox": [
+        134,
+        731,
+        300,
+        915
+      ],
+      "size": [
+        166,
+        184
+      ],
+      "area": 21558
+    },
+    {
+      "letter": "W",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/W.png",
+      "bbox": [
+        343,
+        731,
+        560,
+        915
+      ],
+      "size": [
+        217,
+        184
+      ],
+      "area": 33264
+    },
+    {
+      "letter": "X",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/X.png",
+      "bbox": [
+        601,
+        727,
+        761,
+        916
+      ],
+      "size": [
+        160,
+        189
+      ],
+      "area": 22422
+    },
+    {
+      "letter": "Y",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/Y.png",
+      "bbox": [
+        793,
+        730,
+        954,
+        915
+      ],
+      "size": [
+        161,
+        185
+      ],
+      "area": 18537
+    },
+    {
+      "letter": "Z",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/Z.png",
+      "bbox": [
+        1000,
+        731,
+        1144,
+        915
+      ],
+      "size": [
+        144,
+        184
+      ],
+      "area": 22995
+    }
+  ]
+}

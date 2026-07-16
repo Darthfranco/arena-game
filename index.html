@@ -10,14 +10,14 @@
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="styles.css?v=2026.07.15.8">
+    <link rel="stylesheet" href="styles.css?v=2026.07.16.17">
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 <body>
     <main class="app-shell">
         <section id="start-screen" class="screen art-menu-screen">
             <div class="art-menu-frame main-menu-frame" aria-label="Jungle Rumble main menu">
-                <img class="menu-art" src="assets/menu/jungle-rumble-menu.png?v=2026.07.15.8" alt="">
+                <img class="menu-art" src="assets/menu/jungle-rumble-menu.png?v=2026.07.16.17" alt="">
                 <strong id="menu-loadout-title" class="sr-only">Snake + Pistol</strong>
                 <img id="menu-loadout-art" class="menu-character-preview" src="assets/snake/pistol/good.png" alt="">
                 <input class="menu-name-input" type="text" id="player-name-input" maxlength="18" autocomplete="name" placeholder="Ranger" aria-label="Rumbler name">
@@ -30,7 +30,7 @@
 
         <section id="settings-screen" class="screen art-menu-screen hidden">
             <div class="art-menu-frame settings-menu-frame" aria-label="Settings menu">
-                <img class="menu-art" src="assets/menu/jungle-rumble-settings-menu.png?v=2026.07.15.8" alt="">
+                <img class="menu-art" src="assets/menu/jungle-rumble-settings-menu.png?v=2026.07.16.17" alt="">
                 <button id="settings-back-btn" class="settings-back-btn" type="button" aria-label="Back">‹</button>
                 <button id="music-toggle-btn" class="settings-toggle settings-toggle-music" type="button" aria-label="Music" aria-pressed="true"></button>
                 <button id="sound-toggle-btn" class="settings-toggle settings-toggle-sounds" type="button" aria-label="Sounds" aria-pressed="true"></button>
@@ -41,7 +41,7 @@
 
         <section id="build-screen" class="screen art-menu-screen chooser-screen hidden">
             <div class="art-menu-frame chooser-menu-frame" aria-label="Choose your rumbler">
-                <img class="menu-art" src="assets/menu/choose-your-rumbler-menu.png?v=2026.07.15.8" alt="">
+                <img class="menu-art" src="assets/menu/choose-your-rumbler-menu.png?v=2026.07.16.17" alt="">
                 <button class="chooser-tab chooser-tab-character" type="button" data-builder-step="character" aria-label="Character"></button>
                 <button class="chooser-tab chooser-tab-weapon" type="button" data-builder-step="weapon" aria-label="Weapon"></button>
                 <button class="chooser-tab chooser-tab-ability" type="button" data-builder-step="ability" aria-label="Ability"></button>
@@ -62,7 +62,7 @@
                 </section>
 
                 <section class="chooser-summary" aria-label="Current loadout">
-                    <div><span>charechter</span><img id="summary-character-art" src="assets/snake/snake_face.png" alt=""></div>
+                    <div><span>character</span><img id="summary-character-art" src="assets/snake/snake_face.png" alt=""></div>
                     <div><span>weapon</span><img id="summary-weapon-art" src="assets/weapons/pistol/good.png" alt=""></div>
                     <div><span>ability</span><img id="summary-ability-art" src="assets/buttons/dash.png" alt=""></div>
                 </section>
@@ -85,16 +85,70 @@
             </div>
 
             <div class="room-code-row">
-                <input type="text" id="room-code-input" maxlength="6" inputmode="numeric" autocomplete="off" placeholder="CODE" aria-label="Room code">
+                <input type="text" id="room-code-input" maxlength="16" inputmode="text" autocomplete="off" placeholder="CODE" aria-label="Room code">
                 <button id="copy-code-btn" class="btn ghost hidden" type="button">Copy</button>
+            </div>
+
+            <div class="player-count-picker" aria-label="Player count">
+                <span>Players</span>
+                <button class="count-option selected" type="button" data-player-count="2" aria-pressed="true">2</button>
+                <button class="count-option" type="button" data-player-count="3" aria-pressed="false">3</button>
+                <button class="count-option" type="button" data-player-count="4" aria-pressed="false">4</button>
+                <button class="count-option" type="button" data-player-count="5" aria-pressed="false">5</button>
+                <button class="count-option" type="button" data-player-count="6" aria-pressed="false">6</button>
             </div>
 
             <div class="menu-actions">
                 <button id="host-game-btn" class="btn primary" type="button">Host Room</button>
                 <button id="join-game-btn" class="btn secondary" type="button">Join Room</button>
+                <button id="quick-join-btn" class="btn ghost hidden" type="button">Quick Join</button>
             </div>
 
             <p id="connection-status" class="status-copy">Ready to connect.</p>
+            <div id="lobby-panel" class="lobby-panel hidden" aria-live="polite">
+                <div class="lobby-title">
+                    <strong id="lobby-title">Waiting for players</strong>
+                    <span id="lobby-host-label">Host: Ranger</span>
+                </div>
+                <div id="lobby-list" class="lobby-list"></div>
+            </div>
+        </section>
+
+        <section id="waiting-screen" class="screen menu-screen waiting-screen hidden">
+            <button class="icon-btn back-btn" id="leave-waiting-btn" type="button" aria-label="Leave room">‹</button>
+            <div class="screen-heading">
+                <h2>Waiting Room</h2>
+                <p id="waiting-status">Waiting for players.</p>
+            </div>
+
+            <div class="room-summary">
+                <button id="waiting-copy-code-btn" class="room-code-pill" type="button" aria-label="Copy room code">
+                    <span>Room</span>
+                    <strong id="waiting-room-code">000000</strong>
+                </button>
+                <div class="room-count-pill">
+                    <span>Players</span>
+                    <strong id="waiting-player-count">1/2</strong>
+                </div>
+            </div>
+
+            <div id="waiting-host-controls" class="host-room-controls hidden">
+                <div class="player-count-picker room-max-picker" aria-label="Max players">
+                    <span>Max</span>
+                    <button class="count-option" type="button" data-room-max="2" aria-pressed="false">2</button>
+                    <button class="count-option" type="button" data-room-max="3" aria-pressed="false">3</button>
+                    <button class="count-option" type="button" data-room-max="4" aria-pressed="false">4</button>
+                    <button class="count-option" type="button" data-room-max="5" aria-pressed="false">5</button>
+                    <button class="count-option" type="button" data-room-max="6" aria-pressed="false">6</button>
+                </div>
+            </div>
+
+            <div id="waiting-room-list" class="room-player-list" aria-live="polite"></div>
+
+            <div class="menu-actions waiting-actions">
+                <button id="manual-start-btn" class="btn primary" type="button">Start Match</button>
+                <button id="waiting-leave-btn" class="btn ghost" type="button">Leave Room</button>
+            </div>
         </section>
 
         <section id="game-screen" class="screen game-screen hidden">
@@ -113,7 +167,13 @@
                 </div>
             </div>
 
-            <button id="exit-game-btn" class="icon-btn exit-btn" type="button" aria-label="Exit game">×</button>
+            <div class="round-hud" aria-live="polite">
+                <div class="round-score"><span>Team 1</span><strong id="team-0-score">0</strong></div>
+                <div class="round-center"><span id="round-label">Round 1</span><strong id="round-status">Elimination</strong></div>
+                <div class="round-score"><span>Team 2</span><strong id="team-1-score">0</strong></div>
+            </div>
+
+            <button id="game-menu-btn" class="icon-btn exit-btn" type="button" aria-label="Room menu">☰</button>
             <button id="reload-btn" class="reload-btn" type="button" aria-label="Reload">
                 <img src="assets/buttons/reload_button.png" alt="">
             </button>
@@ -139,7 +199,86 @@
             </div>
         </section>
 
+        <div id="round-overlay" class="round-overlay hidden" role="dialog" aria-modal="true" aria-live="assertive">
+            <section class="round-panel">
+                <strong id="round-result-title">Team 1 Wins</strong>
+                <span id="round-result-detail">Round complete</span>
+                <div class="round-panel-score">
+                    <b id="round-panel-team-0">0</b>
+                    <small>to</small>
+                    <b id="round-panel-team-1">0</b>
+                </div>
+                <button id="round-action-btn" class="btn primary" type="button">Next Round</button>
+            </section>
+        </div>
+
+        <div id="game-menu-overlay" class="game-menu-overlay hidden" role="dialog" aria-modal="true" aria-label="Room menu">
+            <section id="game-menu-panel" class="game-menu-panel">
+                <button id="close-game-menu-btn" class="icon-btn modal-close-btn" type="button" aria-label="Close">×</button>
+                <div class="screen-heading">
+                    <h2>Room Menu</h2>
+                </div>
+                <div class="room-summary">
+                    <button id="game-copy-code-btn" class="room-code-pill" type="button" aria-label="Copy room code">
+                        <span>Room</span>
+                        <strong id="game-room-code">000000</strong>
+                    </button>
+                    <div class="room-count-pill">
+                        <span>Players</span>
+                        <strong id="game-player-count">1/2</strong>
+                    </div>
+                </div>
+                <div class="menu-actions">
+                    <button id="game-settings-btn" class="btn secondary hidden" type="button">Game Settings</button>
+                    <button id="game-leave-btn" class="btn ghost" type="button">Leave Game</button>
+                </div>
+            </section>
+
+            <section id="game-settings-panel" class="game-menu-panel hidden">
+                <button id="close-game-settings-btn" class="icon-btn modal-close-btn" type="button" aria-label="Back">‹</button>
+                <div class="screen-heading">
+                    <h2>Game Settings</h2>
+                    <p>Change max players, teams, and room members.</p>
+                </div>
+                <div class="room-summary">
+                    <button id="settings-copy-code-btn" class="room-code-pill" type="button" aria-label="Copy room code">
+                        <span>Room</span>
+                        <strong id="settings-room-code">000000</strong>
+                    </button>
+                    <div class="room-count-pill">
+                        <span>Players</span>
+                        <strong id="settings-player-count">1/2</strong>
+                    </div>
+                </div>
+                <div class="player-count-picker room-max-picker" aria-label="Max players">
+                    <span>Max</span>
+                    <button class="count-option" type="button" data-room-max="2" aria-pressed="false">2</button>
+                    <button class="count-option" type="button" data-room-max="3" aria-pressed="false">3</button>
+                    <button class="count-option" type="button" data-room-max="4" aria-pressed="false">4</button>
+                    <button class="count-option" type="button" data-room-max="5" aria-pressed="false">5</button>
+                    <button class="count-option" type="button" data-room-max="6" aria-pressed="false">6</button>
+                </div>
+                <div id="game-settings-list" class="room-player-list"></div>
+            </section>
+
+            <section id="host-leave-confirm" class="game-menu-panel confirm-panel hidden">
+                <div class="screen-heading">
+                    <h2>Leave Room?</h2>
+                    <p>Since you are the host, leaving will restart the round for everyone else.</p>
+                </div>
+                <div class="menu-actions">
+                    <button id="confirm-host-leave-btn" class="btn secondary" type="button">Leave Anyway</button>
+                    <button id="cancel-host-leave-btn" class="btn ghost" type="button">Stay</button>
+                </div>
+            </section>
+        </div>
+
         <div id="alert-screen" role="status" aria-live="polite"></div>
+        <div id="migration-overlay" class="migration-overlay hidden" role="status" aria-live="assertive">
+            <div class="migration-loader" aria-hidden="true"></div>
+            <strong>Host left</strong>
+            <span id="migration-message">Starting new match...</span>
+        </div>
 
         <section id="install-screen" class="blocking-screen hidden" aria-live="polite">
             <div class="blocking-mark">JR</div>
@@ -158,6 +297,6 @@
         </section>
     </main>
 
-    <script src="app.js?v=2026.07.15.8"></script>
+    <script src="app.js?v=2026.07.16.17"></script>
 </body>
 </html>

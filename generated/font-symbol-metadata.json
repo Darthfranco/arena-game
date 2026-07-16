@@ -1,0 +1,578 @@
+{
+  "source": "/Users/ikeyfranco/Desktop/font_numbers_punctuation_source.png",
+  "scale": 0.7300380228136882,
+  "glyphs": [
+    {
+      "name": "period",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/period.png",
+      "source_bbox": [
+        278,
+        287,
+        386,
+        397
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        79,
+        80
+      ],
+      "position": [
+        70,
+        126
+      ]
+    },
+    {
+      "name": "comma",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/comma.png",
+      "source_bbox": [
+        504,
+        277,
+        612,
+        426
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        79,
+        109
+      ],
+      "position": [
+        70,
+        97
+      ]
+    },
+    {
+      "name": "exclamation",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/exclamation.png",
+      "source_bbox": [
+        729,
+        135,
+        841,
+        397
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        82,
+        191
+      ],
+      "position": [
+        69,
+        15
+      ]
+    },
+    {
+      "name": "question",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/question.png",
+      "source_bbox": [
+        935,
+        128,
+        1120,
+        398
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        135,
+        197
+      ],
+      "position": [
+        42,
+        9
+      ]
+    },
+    {
+      "name": "colon",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/colon.png",
+      "source_bbox": [
+        1204,
+        187,
+        1304,
+        397
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        73,
+        153
+      ],
+      "position": [
+        73,
+        53
+      ]
+    },
+    {
+      "name": "semicolon",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/semicolon.png",
+      "source_bbox": [
+        1414,
+        187,
+        1516,
+        424
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        74,
+        173
+      ],
+      "position": [
+        73,
+        33
+      ]
+    },
+    {
+      "name": "apostrophe",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/apostrophe.png",
+      "source_bbox": [
+        345,
+        481,
+        436,
+        604
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        66,
+        90
+      ],
+      "position": [
+        77,
+        18
+      ]
+    },
+    {
+      "name": "quote",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/quote.png",
+      "source_bbox": [
+        560,
+        484,
+        741,
+        608
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        132,
+        91
+      ],
+      "position": [
+        44,
+        18
+      ]
+    },
+    {
+      "name": "hyphen",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/hyphen.png",
+      "source_bbox": [
+        869,
+        558,
+        1073,
+        646
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        149,
+        64
+      ],
+      "position": [
+        35,
+        100
+      ]
+    },
+    {
+      "name": "underscore",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/underscore.png",
+      "source_bbox": [
+        1185,
+        623,
+        1392,
+        705
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        151,
+        60
+      ],
+      "position": [
+        34,
+        156
+      ]
+    },
+    {
+      "name": "left_paren",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/left_paren.png",
+      "source_bbox": [
+        278,
+        765,
+        389,
+        1006
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        81,
+        176
+      ],
+      "position": [
+        69,
+        30
+      ]
+    },
+    {
+      "name": "right_paren",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/right_paren.png",
+      "source_bbox": [
+        476,
+        765,
+        588,
+        1006
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        82,
+        176
+      ],
+      "position": [
+        69,
+        30
+      ]
+    },
+    {
+      "name": "ampersand",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/ampersand.png",
+      "source_bbox": [
+        661,
+        776,
+        866,
+        998
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        150,
+        162
+      ],
+      "position": [
+        35,
+        44
+      ]
+    },
+    {
+      "name": "plus",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/plus.png",
+      "source_bbox": [
+        930,
+        801,
+        1101,
+        979
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        125,
+        130
+      ],
+      "position": [
+        47,
+        76
+      ]
+    },
+    {
+      "name": "slash",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/slash.png",
+      "source_bbox": [
+        1158,
+        769,
+        1298,
+        1003
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        102,
+        171
+      ],
+      "position": [
+        59,
+        35
+      ]
+    },
+    {
+      "name": "ellipsis",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/ellipsis.png",
+      "source_bbox": [
+        1324,
+        911,
+        1546,
+        994
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        162,
+        61
+      ],
+      "position": [
+        29,
+        145
+      ]
+    },
+    {
+      "name": "0",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/0.png",
+      "source_bbox": [
+        246,
+        1365,
+        466,
+        1627
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        161,
+        191
+      ],
+      "position": [
+        29,
+        15
+      ]
+    },
+    {
+      "name": "1",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/1.png",
+      "source_bbox": [
+        544,
+        1364,
+        698,
+        1623
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        112,
+        189
+      ],
+      "position": [
+        54,
+        17
+      ]
+    },
+    {
+      "name": "2",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/2.png",
+      "source_bbox": [
+        807,
+        1362,
+        993,
+        1624
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        136,
+        191
+      ],
+      "position": [
+        42,
+        15
+      ]
+    },
+    {
+      "name": "3",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/3.png",
+      "source_bbox": [
+        1081,
+        1364,
+        1269,
+        1627
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        137,
+        192
+      ],
+      "position": [
+        41,
+        14
+      ]
+    },
+    {
+      "name": "4",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/4.png",
+      "source_bbox": [
+        1348,
+        1363,
+        1560,
+        1624
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        155,
+        191
+      ],
+      "position": [
+        32,
+        15
+      ]
+    },
+    {
+      "name": "5",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/5.png",
+      "source_bbox": [
+        261,
+        1708,
+        455,
+        1972
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        142,
+        193
+      ],
+      "position": [
+        39,
+        13
+      ]
+    },
+    {
+      "name": "6",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/6.png",
+      "source_bbox": [
+        544,
+        1706,
+        745,
+        1974
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        147,
+        196
+      ],
+      "position": [
+        36,
+        10
+      ]
+    },
+    {
+      "name": "7",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/7.png",
+      "source_bbox": [
+        813,
+        1711,
+        999,
+        1972
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        136,
+        191
+      ],
+      "position": [
+        42,
+        15
+      ]
+    },
+    {
+      "name": "8",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/8.png",
+      "source_bbox": [
+        1076,
+        1705,
+        1281,
+        1974
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        150,
+        196
+      ],
+      "position": [
+        35,
+        10
+      ]
+    },
+    {
+      "name": "9",
+      "file": "/Users/ikeyfranco/Desktop/arena/fonts/9.png",
+      "source_bbox": [
+        1338,
+        1705,
+        1544,
+        1973
+      ],
+      "canvas": [
+        220,
+        220
+      ],
+      "scaled_glyph": [
+        150,
+        196
+      ],
+      "position": [
+        35,
+        10
+      ]
+    }
+  ]
+}

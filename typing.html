@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jungle Rumble Font Notepad</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #111821;
+      --panel: #182230;
+      --panel-2: #202d3b;
+      --line: #344255;
+      --text: #f7f1e6;
+      --muted: #9facbb;
+      --green: #3dd77f;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(61, 215, 127, 0.12), transparent 30%),
+        linear-gradient(135deg, #0d141d, var(--bg));
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(1120px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0;
+    }
+
+    header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(24, 34, 48, 0.92);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25);
+      overflow: hidden;
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 44px;
+      padding: 0 14px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-2);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    textarea {
+      display: block;
+      width: 100%;
+      min-height: 460px;
+      padding: 16px;
+      resize: vertical;
+      border: 0;
+      outline: 0;
+      background: #101722;
+      color: var(--text);
+      font: 18px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .preview {
+      min-height: 460px;
+      padding: 22px;
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        #121a25;
+      background-size: 32px 32px;
+      overflow: auto;
+    }
+
+    .line {
+      display: flex;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      min-height: 88px;
+      margin-bottom: 6px;
+    }
+
+    .glyph {
+      display: inline-block;
+      height: 76px;
+      width: auto;
+      margin-right: -6px;
+      object-fit: contain;
+      vertical-align: bottom;
+      image-rendering: auto;
+    }
+
+    .space {
+      width: 38px;
+      height: 76px;
+      flex: 0 0 auto;
+    }
+
+    .plain {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 34px;
+      height: 76px;
+      color: var(--muted);
+      font-size: 48px;
+      font-weight: 800;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    button {
+      height: 32px;
+      padding: 0 12px;
+      border: 1px solid #516174;
+      border-radius: 6px;
+      background: #243346;
+      color: var(--text);
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    select {
+      height: 32px;
+      padding: 0 10px;
+      border: 1px solid #516174;
+      border-radius: 6px;
+      background: #243346;
+      color: var(--text);
+      font: inherit;
+      font-size: 13px;
+    }
+
+    button:hover,
+    select:hover {
+      border-color: var(--green);
+    }
+
+    @media (max-width: 820px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      textarea,
+      .preview {
+        min-height: 320px;
+      }
+
+      .glyph {
+        height: 58px;
+        margin-right: -3px;
+      }
+
+      .line,
+      .space,
+      .plain {
+        min-height: 68px;
+        height: 58px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Font Notepad</h1>
+        <div class="meta">Type on the left. The image font renders on the right.</div>
+      </div>
+    </header>
+
+    <section class="workspace">
+      <div class="panel">
+        <div class="panel-title">
+          <span>Text</span>
+          <div class="actions">
+            <select id="fontColor" aria-label="Font color">
+              <option value="white">White</option>
+              <option value="yellow">Yellow</option>
+              <option value="red">Red</option>
+            </select>
+            <button id="clear" type="button">Clear</button>
+          </div>
+        </div>
+        <textarea id="editor" spellcheck="false">JUNGLE RUMBLE 123!</textarea>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">
+          <span>Preview</span>
+        </div>
+        <div id="preview" class="preview" aria-live="polite"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const editor = document.querySelector("#editor");
+    const preview = document.querySelector("#preview");
+    const clear = document.querySelector("#clear");
+    const fontColor = document.querySelector("#fontColor");
+    const glyphFiles = {
+      ".": "period.png",
+      ",": "comma.png",
+      "!": "exclamation.png",
+      "?": "question.png",
+      ":": "colon.png",
+      ";": "semicolon.png",
+      "'": "apostrophe.png",
+      '"': "quote.png",
+      "-": "hyphen.png",
+      "_": "underscore.png",
+      "(": "left_paren.png",
+      ")": "right_paren.png",
+      "&": "ampersand.png",
+      "+": "plus.png",
+      "/": "slash.png",
+      "...": "ellipsis.png"
+    };
+
+    function makeGlyph(char) {
+      const upper = char.toUpperCase();
+      let file = "";
+
+      if (/^[A-Z]$/.test(upper)) {
+        file = `${upper}.png`;
+      } else if (/^[0-9]$/.test(char)) {
+        file = `${char}.png`;
+      } else if (glyphFiles[char]) {
+        file = glyphFiles[char];
+      }
+
+      if (file) {
+        const img = document.createElement("img");
+        img.className = "glyph";
+        img.alt = char;
+        const color = fontColor.value;
+        img.src = color === "white" ? `fonts/${file}` : `fonts/${color}/${file}`;
+        return img;
+      }
+
+      if (char === " ") {
+        const span = document.createElement("span");
+        span.className = "space";
+        return span;
+      }
+
+      const span = document.createElement("span");
+      span.className = "plain";
+      span.textContent = char;
+      return span;
+    }
+
+    function render() {
+      preview.replaceChildren();
+      const lines = editor.value.split("\n");
+
+      for (const textLine of lines) {
+        const line = document.createElement("div");
+        line.className = "line";
+
+        for (let i = 0; i < textLine.length; i += 1) {
+          if (textLine.slice(i, i + 3) === "...") {
+            line.appendChild(makeGlyph("..."));
+            i += 2;
+            continue;
+          }
+
+          line.appendChild(makeGlyph(textLine[i]));
+        }
+
+        preview.appendChild(line);
+      }
+    }
+
+    editor.addEventListener("input", render);
+    fontColor.addEventListener("change", render);
+    clear.addEventListener("click", () => {
+      editor.value = "";
+      editor.focus();
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
